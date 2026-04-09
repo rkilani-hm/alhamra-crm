@@ -44,8 +44,9 @@ const Login = () => {
       setSubmitting(false);
       return;
     }
-    // Don't navigate here — the useEffect above will fire once profile loads
-    // This eliminates the race condition between manual navigate + onAuthStateChange
+    // Safety: reset submitting after 5s if redirect hasn't happened
+    setTimeout(() => setSubmitting(false), 5000);
+    // The useEffect above will fire once profile loads via onAuthStateChange
   };
 
   // Don't render login form while auth is still initialising
