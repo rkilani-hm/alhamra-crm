@@ -78,7 +78,7 @@ const ContactPanel = ({ conversation }: Props) => {
         })
         .select().single();
       if (error) throw error;
-      await supabase.from('wa_conversations').update({ contact_id: newContact.id }).eq('id', conversation.id);
+      await (supabase as any).from('wa_conversations').update({ contact_id: newContact.id }).eq('id', conversation.id);
       return newContact;
     },
     onSuccess: () => {
@@ -109,7 +109,7 @@ const ContactPanel = ({ conversation }: Props) => {
         .select().single();
       if (error) throw error;
       // Link conversation to case
-      await supabase.from('wa_conversations').update({ case_id: newCase.id }).eq('id', conversation.id);
+      await (supabase as any).from('wa_conversations').update({ case_id: newCase.id }).eq('id', conversation.id);
       return newCase;
     },
     onSuccess: () => {
