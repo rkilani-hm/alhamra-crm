@@ -18,20 +18,36 @@ const AuthContext = createContext<AuthContextType>({
 
 async function loadProfile(userId: string): Promise<Profile | null> {
   // Try to fetch existing profile
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('*, departments(name)')
     .eq('id', userId)
     .maybeSingle();
 
+  if (error) {
+    console.error('Profile fetch error:', error.message);
+    // If recursion or RLS error, try without the join
+    const { data: simple } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    if (simple) return simple as unknown as Profile;
+  }
+
   if (data) return data as unknown as Profile;
 
   // Profile doesn't exist (trigger may not have fired) — create it
-  const { data: created } = await supabase
+  const { data: created, error: insertErr } = await supabase
     .from('profiles')
     .insert({ id: userId, role: 'frontdesk' })
     .select('*, departments(name)')
     .maybeSingle();
+
+  if (insertErr) {
+    console.error('Profile insert error:', insertErr.message);
+    return null;
+  }
 
   return created as unknown as Profile | null;
 }
@@ -42,66 +58,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load profile whenever user changes
   useEffect(() => {
-    let cancelled = false;
+    if (!user) {
+      setProfile(null);
+      return;
+    }
 
-    // ── ONLY getSession() drives the initial loading state ──
-    // Safety timeout: if getSession hangs (e.g. stale token refresh), clear loading after 5s
+    let cancelled = false;
+    loadProfile(user.id).then(p => {
+      if (!cancelled) setProfile(p);
+    }).catch(err => {
+      console.error('Failed to load profile:', err);
+    });
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  useEffect(() => {
+    // Safety timeout
     const timeout = setTimeout(() => {
-      if (!cancelled) {
-        console.warn('Auth init timed out — clearing loading state');
-        setLoading(false);
-      }
+      console.warn('Auth init timed out — clearing loading state');
+      setLoading(false);
     }, 5000);
 
-    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
       clearTimeout(timeout);
-      if (cancelled) return;
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) {
-        try {
-          const p = await loadProfile(s.user.id);
-          if (!cancelled) setProfile(p);
-        } catch (err) {
-          console.error('Failed to load profile:', err);
-        }
-      }
-      if (!cancelled) setLoading(false);
+      setLoading(false);
     }).catch((err) => {
       clearTimeout(timeout);
       console.error('getSession failed:', err);
-      if (!cancelled) setLoading(false);
+      setLoading(false);
     });
 
     // ── onAuthStateChange handles SUBSEQUENT transitions only ──
     // It NEVER touches loading — that prevents all flashes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, s) => {
-        if (cancelled) return;
-
+      (_event, s) => {
         setSession(s);
         setUser(s?.user ?? null);
-
-        if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          return;
-        }
-
-        // Load profile whenever we have a user but no profile yet
-        if (s?.user) {
-          try {
-            const p = await loadProfile(s.user.id);
-            if (!cancelled) setProfile(p);
-          } catch (err) {
-            console.error('Failed to load profile on auth change:', err);
-          }
-        }
       }
     );
 
     return () => {
-      cancelled = true;
       clearTimeout(timeout);
       subscription.unsubscribe();
     };
