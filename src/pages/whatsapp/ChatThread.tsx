@@ -43,7 +43,7 @@ const ChatThread = ({ conversation }: Props) => {
   const { data: messages = [], isLoading } = useQuery<WaMessage[]>({
     queryKey: ['wa_messages', conversation.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('wa_messages')
         .select('*')
         .eq('conversation_id', conversation.id)
@@ -67,7 +67,7 @@ const ChatThread = ({ conversation }: Props) => {
       .subscribe();
 
     // Mark as read
-    supabase.from('wa_conversations').update({ unread_count: 0 }).eq('id', conversation.id);
+    (supabase as any).from('wa_conversations').update({ unread_count: 0 }).eq('id', conversation.id);
 
     return () => { supabase.removeChannel(channel); };
   }, [conversation.id, qc]);

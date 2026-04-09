@@ -17,7 +17,7 @@ const WhatsAppInbox = () => {
   const { data: channels = [] } = useQuery<WaChannel[]>({
     queryKey: ['wa_channels'],
     queryFn: async () => {
-      const { data } = await supabase.from('wa_channels').select('*').order('phone');
+      const { data } = await (supabase as any).from('wa_channels').select('*').order('phone');
       return (data ?? []) as WaChannel[];
     },
   });
@@ -33,7 +33,7 @@ const WhatsAppInbox = () => {
     enabled: !!activeChannel,
     refetchInterval: 10_000,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('wa_conversations')
         .select('*, contacts(id,name,phone,email), wa_channels(phone,label)')
         .eq('channel_id', activeChannel!)
@@ -80,7 +80,7 @@ const WhatsAppInbox = () => {
     setActiveConvo(c);
     // Mark as read locally immediately
     if (c.unread_count > 0) {
-      supabase.from('wa_conversations').update({ unread_count: 0 }).eq('id', c.id);
+      (supabase as any).from('wa_conversations').update({ unread_count: 0 }).eq('id', c.id);
       qc.setQueryData(['wa_conversations', activeChannel], (old: WaConversation[] | undefined) =>
         (old ?? []).map(x => x.id === c.id ? { ...x, unread_count: 0 } : x)
       );
