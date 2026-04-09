@@ -13,6 +13,7 @@ import FollowUp from '@/pages/FollowUp';
 import AdminOverview from '@/pages/admin/AdminOverview';
 import AdminUsers from '@/pages/admin/AdminUsers';
 import AdminDepartments from '@/pages/admin/AdminDepartments';
+import WhatsAppInbox from '@/pages/whatsapp/WhatsAppInbox';
 import AdminCategories from '@/pages/admin/AdminCategories';
 import NotFound from '@/pages/NotFound';
 
@@ -51,7 +52,8 @@ const App = () => (
               <Route path="/cases" element={<Navigate to="/follow-up" replace />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route
-                path="/follow-up"
+                path="/whatsapp" element={<ProtectedRoute allowedRoles={['frontdesk','manager']}><WhatsAppInbox /></ProtectedRoute>} />
+              <Route path="/follow-up"
                 element={
                   <ProtectedRoute allowedRoles={['frontdesk', 'manager']}>
                     <FollowUp />
