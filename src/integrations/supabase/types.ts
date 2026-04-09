@@ -224,6 +224,154 @@ export type Database = {
           },
         ]
       }
+      wa_channels: {
+        Row: {
+          channel_id: string
+          created_at: string | null
+          id: string
+          label: string | null
+          phone: string
+          state: string | null
+          transport: string | null
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          phone: string
+          state?: string | null
+          transport?: string | null
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          phone?: string
+          state?: string | null
+          transport?: string | null
+        }
+        Relationships: []
+      }
+      wa_conversations: {
+        Row: {
+          assigned_to: string | null
+          case_id: string | null
+          channel_id: string
+          chat_id: string
+          contact_id: string | null
+          created_at: string | null
+          id: string
+          last_message: string | null
+          last_message_at: string | null
+          unread_count: number | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          case_id?: string | null
+          channel_id: string
+          chat_id: string
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          unread_count?: number | null
+        }
+        Update: {
+          assigned_to?: string | null
+          case_id?: string | null
+          channel_id?: string
+          chat_id?: string
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          unread_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_conversations_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_conversations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_conversations_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "wa_channels"
+            referencedColumns: ["channel_id"]
+          },
+          {
+            foreignKeyName: "wa_conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wa_messages: {
+        Row: {
+          body: string | null
+          conversation_id: string
+          created_at: string | null
+          direction: string
+          id: string
+          media_url: string | null
+          msg_type: string | null
+          sender_name: string | null
+          sent_at: string
+          status: string | null
+          wazzup_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          conversation_id: string
+          created_at?: string | null
+          direction: string
+          id?: string
+          media_url?: string | null
+          msg_type?: string | null
+          sender_name?: string | null
+          sent_at?: string
+          status?: string | null
+          wazzup_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          conversation_id?: string
+          created_at?: string | null
+          direction?: string
+          id?: string
+          media_url?: string | null
+          msg_type?: string | null
+          sender_name?: string | null
+          sent_at?: string
+          status?: string | null
+          wazzup_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
