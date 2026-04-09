@@ -14,7 +14,216 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      case_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          inquiry_type: string
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          inquiry_type?: string
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          inquiry_type?: string
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      case_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          case_id: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          case_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          case_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_notes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cases: {
+        Row: {
+          channel: string | null
+          contact_id: string | null
+          created_at: string | null
+          created_by: string | null
+          department_id: string | null
+          due_at: string | null
+          id: string
+          inquiry_type: string | null
+          notes: string | null
+          priority: string | null
+          status: string | null
+          subject: string
+        }
+        Insert: {
+          channel?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          due_at?: string | null
+          id?: string
+          inquiry_type?: string | null
+          notes?: string | null
+          priority?: string | null
+          status?: string | null
+          subject: string
+        }
+        Update: {
+          channel?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          due_at?: string | null
+          id?: string
+          inquiry_type?: string | null
+          notes?: string | null
+          priority?: string | null
+          status?: string | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cases_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cases_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          source: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          source?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          source?: string | null
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          department_id: string | null
+          full_name: string | null
+          id: string
+          role: string
+        }
+        Insert: {
+          created_at?: string | null
+          department_id?: string | null
+          full_name?: string | null
+          id: string
+          role?: string
+        }
+        Update: {
+          created_at?: string | null
+          department_id?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
