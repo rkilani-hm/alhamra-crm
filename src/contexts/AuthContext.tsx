@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Profile } from '@/types';
 
 interface AuthContextType {
-  user: User | null;
+  user:    User    | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
@@ -16,73 +16,79 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-const fetchProfile = async (userId: string): Promise<Profile | null> => {
+async function loadProfile(userId: string): Promise<Profile | null> {
+  // Try to fetch existing profile
   const { data } = await supabase
     .from('profiles')
     .select('*, departments(name)')
     .eq('id', userId)
     .maybeSingle();
 
-  // If no profile row exists (trigger may not have fired), create one
-  if (!data) {
-    const { data: newProfile } = await supabase
-      .from('profiles')
-      .insert({ id: userId, role: 'frontdesk' })
-      .select('*, departments(name)')
-      .single();
-    return newProfile as unknown as Profile | null;
-  }
+  if (data) return data as unknown as Profile;
 
-  return data as unknown as Profile | null;
-};
+  // Profile doesn't exist (trigger may not have fired) — create it
+  const { data: created } = await supabase
+    .from('profiles')
+    .insert({ id: userId, role: 'frontdesk' })
+    .select('*, departments(name)')
+    .maybeSingle();
+
+  return created as unknown as Profile | null;
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user,    setUser]    = useState<User | null>(null);
+  const [user,    setUser]    = useState<User    | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Get current session on mount
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
+    let cancelled = false;
+
+    // ── ONLY getSession() drives the initial loading state ──
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      if (cancelled) return;
+      setSession(s);
+      setUser(s?.user ?? null);
+      if (s?.user) {
+        const p = await loadProfile(s.user.id);
+        if (!cancelled) setProfile(p);
       }
-      setLoading(false);
+      if (!cancelled) setLoading(false); // loading done — only set once
     });
 
-    // 2. Listen for auth state changes (login / logout / token refresh)
+    // ── onAuthStateChange handles SUBSEQUENT transitions only ──
+    // It NEVER touches loading — that prevents all flashes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      async (event, s) => {
+        if (cancelled) return;
 
-        if (session?.user) {
-          // Set loading true while fetching profile to prevent flash
-          setLoading(true);
-          const p = await fetchProfile(session.user.id);
-          setProfile(p);
-          setLoading(false);
-        } else {
-          setProfile(null);
-          setLoading(false);
+        setSession(s);
+        setUser(s?.user ?? null);
+
+        if (event === 'SIGNED_IN' && s?.user) {
+          const p = await loadProfile(s.user.id);
+          if (!cancelled) setProfile(p);
         }
+
+        if (event === 'SIGNED_OUT') {
+          setProfile(null);
+        }
+        // TOKEN_REFRESHED / USER_UPDATED — state already correct, no action needed
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
-    setLoading(true);
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setProfile(null);
-    setLoading(false);
   };
 
   return (

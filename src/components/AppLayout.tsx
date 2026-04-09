@@ -67,7 +67,7 @@ const SECTIONS = [
     items: [
       {
         to: '/reports', label: 'Reports', icon: BarChart2,
-        roles: ['manager'], badge: null, soon: true,
+        roles: ['manager'], badge: null, soon: false,
       },
     ],
   },
