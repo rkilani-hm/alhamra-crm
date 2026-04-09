@@ -46,7 +46,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     let cancelled = false;
 
     // ── ONLY getSession() drives the initial loading state ──
+    // Safety timeout: if getSession hangs (e.g. stale token refresh), clear loading after 5s
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        console.warn('Auth init timed out — clearing loading state');
+        setLoading(false);
+      }
+    }, 5000);
+
     supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      clearTimeout(timeout);
       if (cancelled) return;
       setSession(s);
       setUser(s?.user ?? null);
@@ -59,7 +68,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       if (!cancelled) setLoading(false);
-    }).catch(() => {
+    }).catch((err) => {
+      clearTimeout(timeout);
+      console.error('getSession failed:', err);
       if (!cancelled) setLoading(false);
     });
 
@@ -90,6 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       cancelled = true;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
