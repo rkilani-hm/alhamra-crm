@@ -85,3 +85,43 @@ export interface SapClient {
   contract_number: string;
   contract_status: 'active' | 'expired' | 'pending';
 }
+
+// ── WhatsApp / Wazzup24 ──────────────────────────────────────
+export interface WaChannel {
+  id: string;
+  channel_id: string;
+  phone: string;
+  label: string | null;
+  transport: string;
+  state: string;
+  created_at: string;
+}
+
+export interface WaConversation {
+  id: string;
+  channel_id: string;
+  chat_id: string;
+  contact_id: string | null;
+  case_id: string | null;
+  assigned_to: string | null;
+  unread_count: number;
+  last_message: string | null;
+  last_message_at: string | null;
+  created_at: string;
+  contacts?: { id: string; name: string; phone: string | null; email: string | null } | null;
+  wa_channels?: { phone: string; label: string | null } | null;
+}
+
+export interface WaMessage {
+  id: string;
+  wazzup_id: string | null;
+  conversation_id: string;
+  direction: 'inbound' | 'outbound';
+  msg_type: string;
+  body: string | null;
+  media_url: string | null;
+  sender_name: string | null;
+  status: string;
+  sent_at: string;
+  created_at: string;
+}
