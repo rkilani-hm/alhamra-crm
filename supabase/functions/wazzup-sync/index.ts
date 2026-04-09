@@ -26,7 +26,9 @@ serve(async (req) => {
     const channelsRes = await fetch('https://api.wazzup24.com/v3/channels', {
       headers: { 'Authorization': `Bearer ${apiKey}` },
     });
-    const channels: any[] = await channelsRes.json();
+    const channelsBody = await channelsRes.json();
+    const channels: any[] = Array.isArray(channelsBody) ? channelsBody : (channelsBody.channels ?? channelsBody.data ?? []);
+    console.log('Wazzup channels response:', JSON.stringify(channelsBody).slice(0, 500));
 
     // 2. Upsert into wa_channels
     const waChannels = channels
