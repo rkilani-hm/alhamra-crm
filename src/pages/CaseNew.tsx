@@ -31,11 +31,11 @@ const CaseNew = () => {
     },
   });
 
-  const { data: categories = [] } = useQuery<CaseCategory[]>({
+  const { data: categories = [] } = useQuery({
     queryKey: ['case-categories'],
-    queryFn: async () => {
+    queryFn: async (): Promise<CaseCategory[]> => {
       const { data } = await supabase.from('case_categories').select('*').order('sort_order').order('name');
-      return data ?? [];
+      return (data as unknown as CaseCategory[]) ?? [];
     },
   });
 

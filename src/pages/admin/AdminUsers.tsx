@@ -32,11 +32,11 @@ const AdminUsers = () => {
   const [editing, setEditing] = useState<Profile | null>(null);
   const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'frontdesk' as Role, department_id: '' });
 
-  const { data: profiles = [] } = useQuery<Profile[]>({
+  const { data: profiles = [] } = useQuery({
     queryKey: ['admin-profiles'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Profile[]> => {
       const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      return data ?? [];
+      return (data as unknown as Profile[]) ?? [];
     },
   });
 

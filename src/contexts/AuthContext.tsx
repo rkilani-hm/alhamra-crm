@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select('*')
       .eq('id', userId)
       .single();
-    setProfile(data);
+    setProfile(data as unknown as Profile | null);
   };
 
   useEffect(() => {

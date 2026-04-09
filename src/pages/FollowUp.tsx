@@ -28,15 +28,15 @@ const FollowUp = () => {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  const { data: cases = [], isLoading } = useQuery<Case[]>({
+  const { data: cases = [], isLoading } = useQuery({
     queryKey: ['cases'],
     refetchInterval: 60_000,
-    queryFn: async () => {
+    queryFn: async (): Promise<Case[]> => {
       const { data } = await supabase
         .from('cases')
         .select('*, contacts(*), departments(*), profiles(*)')
         .order('created_at', { ascending: false });
-      return data ?? [];
+      return (data as unknown as Case[]) ?? [];
     },
   });
 
