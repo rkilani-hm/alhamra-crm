@@ -36,11 +36,11 @@ const AdminCategories = () => {
   const [form, setForm] = useState({ name: '', inquiry_type: 'general' as InquiryType, description: '' });
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data: categories = [] } = useQuery<CaseCategory[]>({
+  const { data: categories = [] } = useQuery({
     queryKey: ['case-categories'],
-    queryFn: async () => {
+    queryFn: async (): Promise<CaseCategory[]> => {
       const { data } = await supabase.from('case_categories').select('*').order('sort_order').order('name');
-      return data ?? [];
+      return (data as unknown as CaseCategory[]) ?? [];
     },
   });
 

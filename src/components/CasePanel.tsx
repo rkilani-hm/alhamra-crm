@@ -64,7 +64,7 @@ const CasePanel = ({ caseItem, open, onClose, allowEdit = false }: Props) => {
   });
 
   const updateCase = useMutation({
-    mutationFn: async (updates: Record<string, unknown>) => {
+    mutationFn: async (updates: { department_id?: string; priority?: string; status?: string }) => {
       const { error } = await supabase.from('cases').update(updates).eq('id', caseItem!.id);
       if (error) throw error;
     },
