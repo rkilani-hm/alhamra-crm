@@ -51,10 +51,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        const p = await loadProfile(s.user.id);
-        if (!cancelled) setProfile(p);
+        try {
+          const p = await loadProfile(s.user.id);
+          if (!cancelled) setProfile(p);
+        } catch (err) {
+          console.error('Failed to load profile:', err);
+        }
       }
-      if (!cancelled) setLoading(false); // loading done — only set once
+      if (!cancelled) setLoading(false);
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
     });
 
     // ── onAuthStateChange handles SUBSEQUENT transitions only ──
@@ -67,8 +73,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(s?.user ?? null);
 
         if (event === 'SIGNED_IN' && s?.user) {
-          const p = await loadProfile(s.user.id);
-          if (!cancelled) setProfile(p);
+          try {
+            const p = await loadProfile(s.user.id);
+            if (!cancelled) setProfile(p);
+          } catch (err) {
+            console.error('Failed to load profile on sign-in:', err);
+          }
         }
 
         if (event === 'SIGNED_OUT') {
