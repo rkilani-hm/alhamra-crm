@@ -85,7 +85,7 @@ const FollowUp = () => {
     <div>
       <div className="mb-6 flex items-center gap-2">
         <ClipboardList className="h-5 w-5" />
-        <h2 className="text-xl font-semibold">Follow-up Tracker</h2>
+        <h1 className="font-serif text-2xl font-semibold">Follow-up Tracker</h1>
       </div>
 
       {/* Summary cards */}
