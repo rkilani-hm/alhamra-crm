@@ -83,19 +83,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(s);
         setUser(s?.user ?? null);
 
-        if (event === 'SIGNED_IN' && s?.user) {
+        if (event === 'SIGNED_OUT') {
+          setProfile(null);
+          return;
+        }
+
+        // Load profile whenever we have a user but no profile yet
+        if (s?.user) {
           try {
             const p = await loadProfile(s.user.id);
             if (!cancelled) setProfile(p);
           } catch (err) {
-            console.error('Failed to load profile on sign-in:', err);
+            console.error('Failed to load profile on auth change:', err);
           }
         }
-
-        if (event === 'SIGNED_OUT') {
-          setProfile(null);
-        }
-        // TOKEN_REFRESHED / USER_UPDATED — state already correct, no action needed
       }
     );
 
