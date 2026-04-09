@@ -28,16 +28,16 @@ const CasePanel = ({ caseItem, open, onClose, allowEdit = false }: Props) => {
   const qc = useQueryClient();
   const [note, setNote] = useState('');
 
-  const { data: notes = [] } = useQuery<CaseNote[]>({
+  const { data: notes = [] } = useQuery({
     queryKey: ['case_notes', caseItem?.id],
     enabled: !!caseItem,
-    queryFn: async () => {
+    queryFn: async (): Promise<CaseNote[]> => {
       const { data } = await supabase
         .from('case_notes')
         .select('*, profiles(full_name)')
         .eq('case_id', caseItem!.id)
         .order('created_at', { ascending: true });
-      return data ?? [];
+      return (data as unknown as CaseNote[]) ?? [];
     },
   });
 
@@ -64,7 +64,7 @@ const CasePanel = ({ caseItem, open, onClose, allowEdit = false }: Props) => {
   });
 
   const updateCase = useMutation({
-    mutationFn: async (updates: Partial<Case>) => {
+    mutationFn: async (updates: Record<string, unknown>) => {
       const { error } = await supabase.from('cases').update(updates).eq('id', caseItem!.id);
       if (error) throw error;
     },

@@ -31,10 +31,10 @@ const Tasks = () => {
   const qc = useQueryClient();
   const [selected, setSelected] = useState<Case | null>(null);
 
-  const { data: cases = [], isLoading } = useQuery<Case[]>({
+  const { data: cases = [], isLoading } = useQuery({
     queryKey: ['tasks', profile?.department_id],
     refetchInterval: 30_000,
-    queryFn: async () => {
+    queryFn: async (): Promise<Case[]> => {
       let query = supabase
         .from('cases')
         .select('*, contacts(*), departments(*), profiles(*)')
@@ -45,7 +45,7 @@ const Tasks = () => {
       }
 
       const { data } = await query;
-      return data ?? [];
+      return (data as unknown as Case[]) ?? [];
     },
   });
 
