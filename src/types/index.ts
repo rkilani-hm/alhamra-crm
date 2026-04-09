@@ -3,7 +3,7 @@ export type Channel = 'call' | 'visit' | 'web' | 'whatsapp';
 export type Priority = 'low' | 'normal' | 'urgent';
 export type CaseStatus = 'new' | 'inprogress' | 'done';
 export type InquiryType = 'leasing' | 'vendor' | 'visitor' | 'general';
-export type ClientType = 'existing' | 'potential';
+export type ClientType = 'existing_tenant' | 'potential' | 'vendor' | 'visitor';
 
 export interface Department {
   id: string;
@@ -17,6 +17,7 @@ export interface Profile {
   role: Role;
   department_id: string | null;
   created_at: string;
+  departments?: Department;
 }
 
 export interface Contact {
@@ -25,6 +26,16 @@ export interface Contact {
   phone: string | null;
   email: string | null;
   source: Channel | null;
+  client_type: ClientType | null;
+  sap_bp_number: string | null;
+  unit: string | null;
+  floor: string | null;
+  contract_number: string | null;
+  company_name: string | null;
+  vendor_type: string | null;
+  id_number: string | null;
+  host_name: string | null;
+  visit_purpose: string | null;
   created_at: string;
 }
 
@@ -40,7 +51,7 @@ export interface Case {
   notes: string | null;
   due_at: string | null;
   created_at: string;
-  inquiry_type?: InquiryType;
+  inquiry_type: InquiryType | null;
   contacts?: Contact;
   departments?: Department;
   profiles?: Profile;
@@ -65,9 +76,12 @@ export interface CaseCategory {
 }
 
 export interface SapClient {
+  bp_number: string;
   name: string;
+  phone: string;
+  email: string;
   unit: string;
   floor: string;
   contract_number: string;
-  status: string;
+  contract_status: 'active' | 'expired' | 'pending';
 }
