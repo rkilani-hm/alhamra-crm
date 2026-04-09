@@ -2,6 +2,8 @@ export type Role = 'frontdesk' | 'department' | 'manager';
 export type Channel = 'call' | 'visit' | 'web' | 'whatsapp';
 export type Priority = 'low' | 'normal' | 'urgent';
 export type CaseStatus = 'new' | 'inprogress' | 'done';
+export type InquiryType = 'leasing' | 'vendor' | 'visitor' | 'general';
+export type ClientType = 'existing' | 'potential';
 
 export interface Department {
   id: string;
@@ -38,6 +40,7 @@ export interface Case {
   notes: string | null;
   due_at: string | null;
   created_at: string;
+  inquiry_type?: InquiryType;
   contacts?: Contact;
   departments?: Department;
   profiles?: Profile;
@@ -50,4 +53,21 @@ export interface CaseNote {
   body: string;
   created_at: string;
   profiles?: Profile;
+}
+
+export interface CaseCategory {
+  id: string;
+  name: string;
+  inquiry_type: InquiryType;
+  description: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface SapClient {
+  name: string;
+  unit: string;
+  floor: string;
+  contract_number: string;
+  status: string;
 }
