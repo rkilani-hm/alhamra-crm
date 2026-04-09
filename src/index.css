@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
-
 @layer base {
   :root {
     /* Alhamra brand tokens */
@@ -11,8 +9,8 @@
     --brand-navy-mid: 213 50% 32%;
     --brand-navy-light: 213 40% 45%;
     --brand-bronze: 38 55% 62%;
-    --brand-bronze-light: 38 55% 75%;
-    --brand-bronze-dark: 38 55% 45%;
+    --brand-bronze-light: 38 55% 88%;
+    --brand-bronze-dark: 38 55% 35%;
 
     --background: 40 18% 97%;
     --foreground: 213 60% 12%;
@@ -41,7 +39,6 @@
     --border: 213 20% 88%;
     --input: 213 20% 88%;
     --ring: 213 60% 22%;
-
     --radius: 0.5rem;
 
     --sidebar-background: 213 58% 9%;
@@ -52,47 +49,35 @@
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 213 50% 16%;
     --sidebar-ring: 38 55% 62%;
-
-    --font-serif: 'Cormorant Garamond', Georgia, serif;
-    --font-sans: 'DM Sans', system-ui, sans-serif;
   }
 
   .dark {
-    --background: 213 58% 6%;
-    --foreground: 40 18% 95%;
-
-    --card: 213 58% 9%;
-    --card-foreground: 40 18% 95%;
-
-    --popover: 213 58% 9%;
-    --popover-foreground: 40 18% 95%;
-
-    --primary: 38 55% 62%;
-    --primary-foreground: 213 58% 9%;
-
-    --secondary: 213 50% 16%;
-    --secondary-foreground: 40 18% 95%;
-
-    --muted: 213 50% 16%;
-    --muted-foreground: 213 20% 60%;
-
-    --accent: 213 50% 16%;
-    --accent-foreground: 40 18% 95%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 213 50% 16%;
-    --input: 213 50% 16%;
-    --ring: 38 55% 62%;
-
-    --sidebar-background: 213 58% 6%;
-    --sidebar-foreground: 213 20% 75%;
+    --background: 213 58% 7%;
+    --foreground: 213 15% 92%;
+    --card: 213 52% 10%;
+    --card-foreground: 213 15% 92%;
+    --popover: 213 52% 10%;
+    --popover-foreground: 213 15% 92%;
+    --primary: 213 50% 55%;
+    --primary-foreground: 213 58% 7%;
+    --secondary: 213 45% 16%;
+    --secondary-foreground: 213 15% 82%;
+    --muted: 213 45% 14%;
+    --muted-foreground: 213 20% 52%;
+    --accent: 38 55% 62%;
+    --accent-foreground: 213 15% 88%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 213 45% 18%;
+    --input: 213 45% 18%;
+    --ring: 213 50% 55%;
+    --sidebar-background: 213 60% 6%;
+    --sidebar-foreground: 213 20% 65%;
     --sidebar-primary: 38 55% 62%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 213 50% 12%;
-    --sidebar-accent-foreground: 40 18% 95%;
-    --sidebar-border: 213 50% 12%;
+    --sidebar-primary-foreground: 213 60% 6%;
+    --sidebar-accent: 213 52% 12%;
+    --sidebar-accent-foreground: 213 15% 88%;
+    --sidebar-border: 213 52% 12%;
     --sidebar-ring: 38 55% 62%;
   }
 }
@@ -104,11 +89,15 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-sans);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3 {
-    font-family: var(--font-serif);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
 }
 
@@ -117,63 +106,54 @@
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;
   }
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-  }
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--border));
-    border-radius: 3px;
+    background: hsl(var(--border));
+    border-radius: 2px;
   }
+}
 
-  .nav-active {
-    border-left: 3px solid hsl(var(--brand-bronze));
-    color: white;
-  }
+/* Sidebar subtle noise texture */
+.sidebar-texture {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+}
 
-  .stat-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px -8px hsl(var(--brand-navy) / 0.15);
-  }
+/* Active nav left accent bar */
+.nav-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: hsl(var(--sidebar-primary));
+  border-radius: 0 2px 2px 0;
+}
 
-  .table-row-hover {
-    transition: background-color 0.15s ease;
-  }
-  .table-row-hover:hover {
-    background-color: hsl(var(--muted) / 0.5);
-  }
+/* Stat card hover lift */
+.stat-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -4px hsl(var(--foreground) / 0.07);
+}
 
-  @keyframes page-enter-kf {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .page-enter {
-    animation: page-enter-kf 0.3s ease-out;
-  }
+/* Table row hover */
+.table-row-hover {
+  transition: background 0.1s ease;
+}
+.table-row-hover:hover {
+  background: hsl(var(--muted));
+}
 
-  .sidebar-texture {
-    position: relative;
-  }
-  .sidebar-texture::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    opacity: 0.03;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-  }
-  .sidebar-texture > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  .font-serif {
-    font-family: var(--font-serif);
-  }
+/* Page fade-in */
+.page-enter {
+  animation: pageEnter 0.18s ease-out;
+}
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
