@@ -8,9 +8,12 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from '@/components/AppLayout';
 import Login from '@/pages/Login';
 import CaseNew from '@/pages/CaseNew';
-import Cases from '@/pages/Cases';
 import Tasks from '@/pages/Tasks';
 import FollowUp from '@/pages/FollowUp';
+import AdminOverview from '@/pages/admin/AdminOverview';
+import AdminUsers from '@/pages/admin/AdminUsers';
+import AdminDepartments from '@/pages/admin/AdminDepartments';
+import AdminCategories from '@/pages/admin/AdminCategories';
 import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient({
@@ -44,20 +47,46 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/cases"
-                element={
-                  <ProtectedRoute allowedRoles={['frontdesk', 'manager']}>
-                    <Cases />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/cases" element={<Navigate to="/follow-up" replace />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route
                 path="/follow-up"
                 element={
                   <ProtectedRoute allowedRoles={['frontdesk', 'manager']}>
                     <FollowUp />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Admin routes — manager only */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute allowedRoles={['manager']}>
+                    <AdminOverview />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute allowedRoles={['manager']}>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/departments"
+                element={
+                  <ProtectedRoute allowedRoles={['manager']}>
+                    <AdminDepartments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/categories"
+                element={
+                  <ProtectedRoute allowedRoles={['manager']}>
+                    <AdminCategories />
                   </ProtectedRoute>
                 }
               />

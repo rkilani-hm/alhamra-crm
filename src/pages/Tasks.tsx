@@ -66,9 +66,9 @@ const Tasks = () => {
     <div>
       <div className="mb-6 flex items-center gap-2">
         <CheckSquare className="h-5 w-5" />
-        <h2 className="text-xl font-semibold">
+        <h1 className="font-serif text-2xl font-semibold">
           {profile?.role === 'department' ? 'My Tasks' : 'All Tasks'}
-        </h2>
+        </h1>
         <span className="text-sm text-muted-foreground">— {cases.length} cases</span>
       </div>
 
