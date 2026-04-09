@@ -56,7 +56,7 @@ const SECTIONS = [
     items: [
       {
         to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare,
-        roles: ['frontdesk','manager'], badge: null, soon: true,
+        roles: ['frontdesk','manager'], badge: null, soon: false,
       },
     ],
   },
