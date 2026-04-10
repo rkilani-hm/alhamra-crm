@@ -20,7 +20,7 @@ const GlobalIFrame = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
+    (async () => {
       const { data: res, error: e } = await supabase.functions.invoke('wazzup-iframe', {
         body: { scope: 'global' },
       });
@@ -31,7 +31,7 @@ const GlobalIFrame = ({
         setUrl(res.url);
       }
       setLoading(false);
-    });
+    })();
   }, []);
 
   // Listen for postMessage events from the Wazzup24 iFrame
@@ -88,7 +88,7 @@ const ScopedIFrame = ({ conversation }: { conversation: WaConversation }) => {
   useEffect(() => {
     setUrl(null);
     setLoading(true);
-    supabase.auth.getUser().then(async ({ data }) => {
+    (async () => {
       const { data: res } = await supabase.functions.invoke('wazzup-iframe', {
         body: {
           scope:     'card',
@@ -99,7 +99,7 @@ const ScopedIFrame = ({ conversation }: { conversation: WaConversation }) => {
       });
       if (res?.url) setUrl(res.url);
       setLoading(false);
-    });
+    })();
   }, [conversation.id]);
 
   if (loading) return (
