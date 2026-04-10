@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   PhoneIncoming, ClipboardList, CheckSquare, LogOut, Layers,
   LayoutDashboard, Users, Building2, Tag,
-  ChevronLeft, ChevronRight, MessageSquare, BarChart2, CalendarCheck,
+  ChevronLeft, ChevronRight, MessageSquare, BarChart2, Calendar,
 } from 'lucide-react';
 
 /* ─── Official Al Hamra brand tokens ──────────────────────── */
@@ -51,7 +51,7 @@ const SECTIONS: { section: string; roles: NavRole[]; items: NavItem[] }[] = [
     items:   [
       { to: '/organizations', label: 'Organizations', icon: Building2,     roles: ['frontdesk','manager'] },
       { to: '/contacts',      label: 'Contacts',      icon: Users,         roles: ['frontdesk','manager'] },
-      { to: '/activities',    label: 'Activities',    icon: CalendarCheck, roles: ['frontdesk','manager'] },
+      { to: '/activities',    label: 'Activities',    icon: Calendar,    roles: ['frontdesk','manager'] },
     ],
   },
   {
