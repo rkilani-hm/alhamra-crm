@@ -14,15 +14,28 @@ export default {
     },
     extend: {
       fontFamily: {
+        sans: ["'Josefin Sans'", "'Century Gothic'", "'Gill Sans'", "sans-serif"],
         serif: ["'Cormorant Garamond'", "Georgia", "serif"],
         sans: ["'DM Sans'", "system-ui", "sans-serif"],
       },
+      fontFamily: {
+        sans: ["'Nunito'", "'Century Gothic'", "'AppleGothic'", "sans-serif"],
+        display: ["'Nunito'", "'Century Gothic'", "sans-serif"],
+      },
       colors: {
+        'ah-red':   '#CD1719',
+        'ah-black': '#1D1D1B',
+        'ah-gray':  '#B2B2B2',
+        'ah-light': '#EDEDED',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        'ah-red':   '#CD1719',
+        'ah-dark':  '#1D1D1B',
+        'ah-gray':  '#B2B2B2',
+        'ah-light': '#EDEDED',
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
