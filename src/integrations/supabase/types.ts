@@ -14,6 +14,109 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          assigned_to: string | null
+          body: string | null
+          case_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          created_by: string | null
+          department_id: string | null
+          done: boolean | null
+          done_at: string | null
+          duration_min: number | null
+          id: string
+          organization_id: string | null
+          outcome: string | null
+          scheduled_at: string | null
+          subject: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          body?: string | null
+          case_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          done?: boolean | null
+          done_at?: string | null
+          duration_min?: number | null
+          id?: string
+          organization_id?: string | null
+          outcome?: string | null
+          scheduled_at?: string | null
+          subject: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          body?: string | null
+          case_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          done?: boolean | null
+          done_at?: string | null
+          duration_min?: number | null
+          id?: string
+          organization_id?: string | null
+          outcome?: string | null
+          scheduled_at?: string | null
+          subject?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_categories: {
         Row: {
           created_at: string | null
@@ -152,7 +255,10 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          job_title: string | null
+          linkedin_url: string | null
           name: string
+          organization_id: string | null
           phone: string | null
           source: string | null
         }
@@ -160,7 +266,10 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          job_title?: string | null
+          linkedin_url?: string | null
           name: string
+          organization_id?: string | null
           phone?: string | null
           source?: string | null
         }
@@ -168,11 +277,22 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          job_title?: string | null
+          linkedin_url?: string | null
           name?: string
+          organization_id?: string | null
           phone?: string | null
           source?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contacts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       departments: {
         Row: {
@@ -191,6 +311,78 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      organizations: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          email: string | null
+          id: string
+          industry: string | null
+          name: string
+          owner_id: string | null
+          phone: string | null
+          sap_bp_number: string | null
+          type: string
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name: string
+          owner_id?: string | null
+          phone?: string | null
+          sap_bp_number?: string | null
+          type?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          name?: string
+          owner_id?: string | null
+          phone?: string | null
+          sap_bp_number?: string | null
+          type?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

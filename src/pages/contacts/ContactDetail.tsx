@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -28,8 +28,9 @@ const ContactDetail = () => {
   const { data: contact } = useQuery<Contact & { organizations?: Organization | null; job_title?: string }>({
     queryKey: ['contact', id],
     queryFn: async () => { const { data } = await (supabase as any).from('contacts').select('*, organizations(id,name,type)').eq('id', id).single(); return data; },
-    onSuccess: (d: any) => setEditForm(d),
   });
+
+  useEffect(() => { if (contact) setEditForm(contact); }, [contact]);
 
   const { data: orgs = [] } = useQuery<Organization[]>({
     queryKey: ['orgs-select'],
