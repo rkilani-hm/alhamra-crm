@@ -125,3 +125,63 @@ export interface WaMessage {
   sent_at: string;
   created_at: string;
 }
+
+// ── Organizations & Activities (Pipedrive-inspired) ──────────
+
+export type OrgType = 'tenant' | 'vendor' | 'partner' | 'prospect' | 'other';
+
+export interface Organization {
+  id:            string;
+  name:          string;
+  type:          OrgType;
+  industry:      string | null;
+  website:       string | null;
+  email:         string | null;
+  phone:         string | null;
+  address:       string | null;
+  city:          string | null;
+  country:       string | null;
+  sap_bp_number: string | null;
+  description:   string | null;
+  owner_id:      string | null;
+  created_by:    string | null;
+  created_at:    string;
+  updated_at:    string;
+  // joins
+  contacts?:     Contact[];
+  profiles?:     Profile;
+  _count?: {
+    contacts: number;
+    cases:    number;
+    activities: number;
+  };
+}
+
+export type ActivityType = 'call' | 'meeting' | 'whatsapp' | 'email' | 'visit' | 'task' | 'note' | 'case';
+
+export interface Activity {
+  id:              string;
+  type:            ActivityType;
+  subject:         string;
+  body:            string | null;
+  organization_id: string | null;
+  contact_id:      string | null;
+  case_id:         string | null;
+  scheduled_at:    string | null;
+  duration_min:    number | null;
+  done:            boolean;
+  done_at:         string | null;
+  outcome:         string | null;
+  created_by:      string | null;
+  assigned_to:     string | null;
+  department_id:   string | null;
+  created_at:      string;
+  updated_at:      string;
+  // joins
+  organizations?:  { id: string; name: string } | null;
+  contacts?:       { id: string; name: string; phone: string | null } | null;
+  cases?:          { id: string; subject: string } | null;
+  profiles?:       { id: string; full_name: string | null } | null;
+  assigned?:       { id: string; full_name: string | null } | null;
+  departments?:    { id: string; name: string } | null;
+}
