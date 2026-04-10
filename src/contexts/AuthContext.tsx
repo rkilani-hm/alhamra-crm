@@ -16,40 +16,48 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-async function loadProfile(userId: string): Promise<Profile | null> {
-  // Try to fetch existing profile
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*, departments(name)')
-    .eq('id', userId)
-    .maybeSingle();
+const safeDefaultProfile = (userId: string): Profile =>
+  ({ id: userId, full_name: null, role: 'frontdesk', department_id: null, created_at: null } as unknown as Profile);
 
-  if (error) {
-    console.error('Profile fetch error:', error.message);
-    // If recursion or RLS error, try without the join
-    const { data: simple } = await supabase
+async function loadProfile(userId: string): Promise<Profile> {
+  try {
+    const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('*, departments(name)')
       .eq('id', userId)
       .maybeSingle();
-    if (simple) return simple as unknown as Profile;
+
+    if (error) {
+      console.error('Profile fetch error:', error.message);
+      // Try without join
+      const { data: simple } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      if (simple) return simple as unknown as Profile;
+      return safeDefaultProfile(userId);
+    }
+
+    if (data) return data as unknown as Profile;
+
+    // Profile doesn't exist — create it
+    const { data: created, error: insertErr } = await supabase
+      .from('profiles')
+      .insert({ id: userId, role: 'frontdesk' })
+      .select('*, departments(name)')
+      .maybeSingle();
+
+    if (insertErr) {
+      console.error('Profile insert error:', insertErr.message);
+      return safeDefaultProfile(userId);
+    }
+
+    return (created as unknown as Profile) ?? safeDefaultProfile(userId);
+  } catch (err) {
+    console.error('Profile load exception:', err);
+    return safeDefaultProfile(userId);
   }
-
-  if (data) return data as unknown as Profile;
-
-  // Profile doesn't exist (trigger may not have fired) — create it
-  const { data: created, error: insertErr } = await supabase
-    .from('profiles')
-    .insert({ id: userId, role: 'frontdesk' })
-    .select('*, departments(name)')
-    .maybeSingle();
-
-  if (insertErr) {
-    console.error('Profile insert error:', insertErr.message);
-    return null;
-  }
-
-  return created as unknown as Profile | null;
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
