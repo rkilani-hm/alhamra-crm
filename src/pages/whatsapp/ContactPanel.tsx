@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import {
   User2, Phone, Mail, Link2, Plus, ExternalLink,
-  Building2, ClipboardList, ChevronDown, ChevronUp, Loader2,
+  Building2, ClipboardList, ChevronDown, ChevronUp, Loader2, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,9 +22,9 @@ const STATUS_COLOR: Record<string, string> = {
   done:       'bg-green-50 text-green-700',
 };
 
-interface Props { conversation: WaConversation; }
+interface Props { conversation: WaConversation; onClose?: () => void; }
 
-const ContactPanel = ({ conversation }: Props) => {
+const ContactPanel = ({ conversation, onClose }: Props) => {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [showCaseForm, setShowCaseForm] = useState(false);
@@ -129,6 +129,11 @@ const ContactPanel = ({ conversation }: Props) => {
       <div className="border-b p-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contact</p>
+          {onClose && (
+            <button onClick={onClose} className="p-1 rounded hover:bg-muted transition-colors" title="Close panel">
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          )}
           {!conversation.contact_id && (
             <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1"
               onClick={() => createContact.mutate()} disabled={createContact.isPending}>
