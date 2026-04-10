@@ -203,7 +203,7 @@ export default function Login() {
                 style={{
                   width: '100%', height: 48, padding: '0 16px',
                   fontSize: 13, letterSpacing: '0.02em',
-                  background: AH.WHITE ?? '#fff',
+                  background: '#fff',
                   border: errors.email ? `2px solid ${AH.RED}` : `1.5px solid #D0D0D0`,
                   borderRadius: 4, outline: 'none',
                   fontFamily: 'inherit', color: AH.DARK,
