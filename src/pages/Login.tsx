@@ -11,18 +11,16 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import AlhamraLogo from '@/components/AlhamraLogo';
 
-const RED   = '#CD1719';
-const BLACK = '#1D1D1B';
-const LIGHT = '#EDEDED';
+const AH = { red: '#CD1719', dark: '#1D1D1B', gray: '#B2B2B2', light: '#EDEDED' };
 
 const schema = z.object({
-  email:    z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email:    z.string().email('Invalid email'),
+  password: z.string().min(1, 'Password required'),
 });
 type FormData = z.infer<typeof schema>;
 
 const Login = () => {
-  const navigate   = useNavigate();
+  const navigate  = useNavigate();
   const { user, profile, loading } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,7 +28,7 @@ const Login = () => {
     resolver: zodResolver(schema),
   });
 
-  // Already authenticated → redirect
+  // Already logged in — redirect by role
   useEffect(() => {
     if (!loading && user && profile) {
       const dest = profile.role === 'department' ? '/tasks'
@@ -43,82 +41,91 @@ const Login = () => {
   const onSubmit = async ({ email, password }: FormData) => {
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      toast.error(error.message);
-      setSubmitting(false);
-    }
+    if (error) { toast.error(error.message); setSubmitting(false); }
     // Navigation handled by useEffect above
   };
 
   if (loading) return (
-    <div className="flex min-h-screen items-center justify-center" style={{ background: LIGHT }}>
-      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-t-transparent" style={{ borderColor: `${RED} transparent ${RED} ${RED}` }} />
+    <div className="flex min-h-screen items-center justify-center" style={{ background: AH.light }}>
+      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-t-transparent" style={{ borderColor: AH.red }} />
     </div>
   );
 
   return (
-    <div className="flex min-h-screen" style={{ background: LIGHT, fontFamily: 'Nunito, Century Gothic, sans-serif' }}>
+    <div className="flex min-h-screen" style={{ background: AH.light }}>
 
-      {/* ── Left: Brand panel ────────────────────────────── */}
+      {/* ── Left — brand panel ─────────────────────────────── */}
       <div
-        className="hidden lg:flex lg:w-[45%] flex-col justify-between relative overflow-hidden"
-        style={{ background: BLACK }}
+        className="hidden lg:flex lg:w-[45%] flex-col justify-between p-12 relative overflow-hidden"
+        style={{ background: AH.dark }}
       >
-        {/* Red accent bar at top */}
-        <div className="absolute top-0 left-0 right-0 h-1" style={{ background: RED }} />
-
-        {/* Decorative tower watermark */}
+        {/* Large decorative tower watermark */}
         <svg
-          className="absolute right-[-8%] top-[8%] pointer-events-none select-none"
-          width="460" height="820"
-          viewBox="0 0 26 50" fill="white" opacity="0.03"
+          className="absolute right-[-8%] bottom-[-5%] pointer-events-none select-none"
+          width="440" height="700" viewBox="0 0 28 50" fill="none" opacity="0.06"
         >
-          <path d="M13 0 L13.8 5 L12.2 5 Z" />
-          <path d="M10 5 L16 5 L17 10 L17 48 L9 48 L9 10 Z" />
+          <path d="M14 0 L14.8 4 L13.2 4 Z" fill="white" />
+          <path d="M9 4 L19 4 L20 9 L20 48 L8 48 L8 9 Z" fill="white" />
+          <rect x="6" y="45" width="16" height="3" rx="1" fill="white" />
         </svg>
 
-        {/* Diagonal red stripe accent */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 overflow-hidden" style={{ opacity: 0.06 }}>
-          <div className="absolute inset-0" style={{ background: `repeating-linear-gradient(45deg, ${RED} 0, ${RED} 1px, transparent 0, transparent 50%)`, backgroundSize: '12px 12px' }} />
-        </div>
+        {/* Red top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1" style={{ background: AH.red }} />
 
-        {/* Content */}
-        <div className="relative z-10 p-12 pt-14">
-          <AlhamraLogo size={42} variant="light" showText />
-        </div>
+        <AlhamraLogo size={42} variant="light" showText />
 
-        <div className="relative z-10 px-12 pb-4">
-          <div className="w-8 h-1 mb-6 rounded" style={{ background: RED }} />
-          <h2 style={{
-            fontFamily: 'Nunito, Century Gothic, sans-serif',
-            fontSize: '2.4rem',
-            fontWeight: 800,
-            color: 'rgba(255,255,255,0.92)',
-            lineHeight: 1.15,
-            marginBottom: '1.25rem',
-            letterSpacing: '-0.01em',
+        <div>
+          {/* Large headline in official style */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              letterSpacing: '0.25em',
+              textTransform: 'uppercase',
+              color: AH.red,
+              marginBottom: '0.75rem',
+            }}>
+              Client Management System
+            </p>
+            <h2 style={{
+              fontSize: '2.4rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              color: '#FFFFFF',
+              lineHeight: 1.15,
+            }}>
+              Al Hamra<br />
+              <span style={{ color: AH.red }}>Business Tower</span>
+            </h2>
+          </div>
+          <p style={{
+            fontSize: '0.85rem',
+            color: AH.gray,
+            lineHeight: 1.75,
+            maxWidth: '340px',
+            fontWeight: 300,
+            letterSpacing: '0.02em',
           }}>
-            Client Management<br />
-            <span style={{ color: RED }}>Excellence.</span>
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.38)', lineHeight: 1.75 }}>
-            Al Hamra Real Estate — Kuwait's most iconic business address. 
-            Managing every client interaction with precision.
+            The Al Hamra CRM connects your front desk, leasing team, and operations — Kuwait's most iconic business address, managed seamlessly.
           </p>
         </div>
 
-        <div className="relative z-10 flex gap-8 px-12 pb-12">
-          {[['Front Desk','Instant capture'],['Leasing','SAP-synced'],['Operations','Task routing']].map(([l, d]) => (
-            <div key={l}>
-              <p className="text-xs font-bold mb-1 uppercase tracking-wider" style={{ color: RED }}>{l}</p>
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>{d}</p>
+        {/* Bottom feature labels */}
+        <div className="flex gap-8">
+          {[['Front Desk','Instant inquiry capture'],['Leasing','SAP-synced data'],['Operations','Task routing']].map(([lbl, desc]) => (
+            <div key={lbl}>
+              <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: AH.red, marginBottom: 4 }}>
+                {lbl}
+              </p>
+              <p style={{ fontSize: '0.7rem', color: AH.gray, letterSpacing: '0.04em' }}>{desc}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Right: Login form ─────────────────────────────── */}
-      <div className="flex flex-1 items-center justify-center p-8" style={{ background: '#fff' }}>
+      {/* ── Right — login form ─────────────────────────────── */}
+      <div className="flex flex-1 items-center justify-center p-8" style={{ background: AH.light }}>
         <div className="w-full max-w-sm">
 
           {/* Mobile logo */}
@@ -126,88 +133,74 @@ const Login = () => {
             <AlhamraLogo size={38} variant="dark" showText />
           </div>
 
-          {/* Red accent line */}
-          <div className="w-10 h-1 mb-6 rounded" style={{ background: RED }} />
+          {/* Red top accent */}
+          <div className="mb-6 h-1 w-12 rounded" style={{ background: AH.red }} />
 
           <div className="mb-8">
-            <h1 style={{
-              fontFamily: 'Nunito, Century Gothic, sans-serif',
-              fontWeight: 800,
-              fontSize: '1.875rem',
-              color: BLACK,
-              letterSpacing: '-0.02em',
-              lineHeight: 1.1,
+            <p style={{
+              fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.22em',
+              textTransform: 'uppercase', color: AH.red, marginBottom: 6,
             }}>
-              Welcome back
+              Welcome Back
+            </p>
+            <h1 style={{
+              fontSize: '1.8rem', fontWeight: 700, letterSpacing: '0.06em',
+              textTransform: 'uppercase', color: AH.dark, lineHeight: 1.1,
+            }}>
+              Sign In
             </h1>
-            <p className="mt-2 text-sm" style={{ color: '#B2B2B2' }}>
-              Sign in to Al Hamra CRM
+            <p style={{ fontSize: '0.8rem', color: AH.gray, marginTop: 6, letterSpacing: '0.03em' }}>
+              Enter your credentials to access the system
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-1.5">
-              <Label style={{ fontWeight: 600, fontSize: '0.8rem', color: BLACK, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <Label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: AH.dark }}>
                 Email Address
               </Label>
               <Input
-                type="email"
-                autoComplete="email"
-                autoFocus
+                type="email" autoComplete="email" autoFocus
                 placeholder="you@alhamra.com.kw"
-                className="h-12 rounded-lg border-2 text-sm transition-colors"
-                style={{ borderColor: '#EDEDED', background: '#FAFAFA' }}
-                onFocus={e => (e.target.style.borderColor = RED)}
-                onBlur={e => (e.target.style.borderColor = '#EDEDED')}
+                className="h-11 text-sm"
+                style={{ background: '#fff', borderColor: '#D5D5D5' }}
                 {...register('email')}
               />
-              {errors.email && <p className="text-xs" style={{ color: RED }}>{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label style={{ fontWeight: 600, fontSize: '0.8rem', color: BLACK, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <Label style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: AH.dark }}>
                 Password
               </Label>
               <Input
-                type="password"
-                autoComplete="current-password"
+                type="password" autoComplete="current-password"
                 placeholder="••••••••"
-                className="h-12 rounded-lg border-2 text-sm transition-colors"
-                style={{ borderColor: '#EDEDED', background: '#FAFAFA' }}
-                onFocus={e => (e.target.style.borderColor = RED)}
-                onBlur={e => (e.target.style.borderColor = '#EDEDED')}
+                className="h-11 text-sm"
+                style={{ background: '#fff', borderColor: '#D5D5D5' }}
                 {...register('password')}
               />
-              {errors.password && <p className="text-xs" style={{ color: RED }}>{errors.password.message}</p>}
+              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
 
-            <Button
+            <button
               type="submit"
               disabled={submitting}
-              className="w-full h-12 font-bold text-sm rounded-lg tracking-wide transition-all"
-              style={{ background: submitting ? '#B2B2B2' : RED, color: '#fff', border: 'none', letterSpacing: '0.05em' }}
+              className="w-full h-12 font-bold uppercase tracking-widest text-white transition-all hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+              style={{ background: AH.red, letterSpacing: '0.18em', fontSize: '0.72rem', borderRadius: 6 }}
             >
               {submitting ? (
-                <span className="flex items-center gap-2">
+                <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  SIGNING IN…
-                </span>
-              ) : 'SIGN IN →'}
-            </Button>
+                  Signing in…
+                </>
+              ) : 'Sign In →'}
+            </button>
           </form>
 
-          <p className="mt-8 text-center text-xs" style={{ color: '#B2B2B2' }}>
-            Contact your administrator to create an account
+          <p className="mt-6 text-center text-[11px] tracking-wide" style={{ color: AH.gray }}>
+            Contact your system administrator to create an account
           </p>
-
-          {/* Brand footer */}
-          <div className="mt-12 pt-6 border-t flex items-center justify-center gap-2" style={{ borderColor: '#EDEDED' }}>
-            <div className="w-4 h-px" style={{ background: RED }} />
-            <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#B2B2B2' }}>
-              Al Hamra Real Estate
-            </p>
-            <div className="w-4 h-px" style={{ background: RED }} />
-          </div>
         </div>
       </div>
     </div>

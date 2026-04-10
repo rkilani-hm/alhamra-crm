@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink as RRNavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink as RRNavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -7,27 +7,33 @@ import AlhamraLogo from '@/components/AlhamraLogo';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   PhoneIncoming, ClipboardList, CheckSquare, LogOut,
-  LayoutDashboard, Users, Building2, Tag, MessageSquare,
-  BarChart2, ChevronLeft, ChevronRight, Layers,
+  Layers, LayoutDashboard, Users, Building2, Tag,
+  ChevronLeft, ChevronRight, MessageSquare, BarChart2,
+  Bell, Settings,
 } from 'lucide-react';
 
-/* ── Brand constants ─────────────────────────────────────── */
-const RED   = '#CD1719';
-const BLACK = '#1D1D1B';
-const MUTED = 'rgba(178,178,178,0.75)';
-const HOVER = 'rgba(205,23,25,0.10)';
-const ACTIVE_BG = 'rgba(205,23,25,0.14)';
+/* ─── Brand tokens ─────────────────────────────── */
+const C = {
+  bg:      '#1D1D1B',
+  hover:   '#2A2A27',
+  active:  '#242420',
+  border:  '#2E2E2A',
+  text:    '#B2B2B2',
+  white:   '#FFFFFF',
+  red:     '#CD1719',
+  light:   '#EDEDED',
+};
 
-/* ── Nav structure ───────────────────────────────────────── */
+/* ─── Nav structure ────────────────────────────── */
 const SECTIONS = [
   {
     key: 'workspace', label: 'Workspace',
     roles: ['frontdesk','manager','department'],
     items: [
-      { to: '/cases/new', label: 'New Case',   icon: PhoneIncoming, roles: ['frontdesk','manager'], end: true },
-      { to: '/follow-up', label: 'Follow-up',  icon: ClipboardList, roles: ['frontdesk','manager'] },
-      { to: '/tasks',     label: 'My Tasks',   icon: CheckSquare,   roles: ['department'], end: true },
-      { to: '/tasks',     label: 'All Tasks',  icon: Layers,        roles: ['manager'],    end: true },
+      { to: '/cases/new',  label: 'New Case',    icon: PhoneIncoming, roles: ['frontdesk','manager'], accent: true },
+      { to: '/follow-up',  label: 'Follow-up',   icon: ClipboardList, roles: ['frontdesk','manager'], badge: 'urgent' },
+      { to: '/tasks',      label: 'My Tasks',    icon: CheckSquare,   roles: ['department'], end: true },
+      { to: '/tasks',      label: 'All Tasks',   icon: Layers,        roles: ['manager'],    end: true },
     ],
   },
   {
@@ -48,113 +54,118 @@ const SECTIONS = [
     key: 'admin', label: 'Admin',
     roles: ['manager'],
     items: [
-      { to: '/admin',              label: 'Overview',    icon: LayoutDashboard, roles: ['manager'], end: true },
-      { to: '/admin/users',        label: 'Users',       icon: Users,           roles: ['manager'] },
-      { to: '/admin/departments',  label: 'Departments', icon: Building2,       roles: ['manager'] },
-      { to: '/admin/categories',   label: 'Categories',  icon: Tag,             roles: ['manager'] },
+      { to: '/admin',             label: 'Overview',    icon: LayoutDashboard, roles: ['manager'], end: true },
+      { to: '/admin/users',       label: 'Users',       icon: Users,           roles: ['manager'] },
+      { to: '/admin/departments', label: 'Departments', icon: Building2,       roles: ['manager'] },
+      { to: '/admin/categories',  label: 'Categories',  icon: Tag,             roles: ['manager'] },
     ],
   },
 ];
 
 const AppLayout = () => {
   const { profile, signOut } = useAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+  const location  = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const role = profile?.role ?? '';
 
+  const role = profile?.role ?? '';
   const initials = (profile?.full_name ?? 'U')
     .split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
   const handleSignOut = async () => { await signOut(); navigate('/login'); };
 
-  /* ── Nav item builder ──────────────────────────────────── */
-  const NavItem = ({ to, label, icon: Icon, end }: any) => {
-    const inner = ({ isActive }: { isActive: boolean }) => (
-      <span
+  // Check if a route is active
+  const isActive = (to: string, end?: boolean) =>
+    end ? location.pathname === to : location.pathname.startsWith(to);
+
+  const NavItem = ({ to, label, icon: Icon, end, accent }: any) => {
+    const active = isActive(to, end);
+
+    const inner = (
+      <RRNavLink
+        to={to}
+        end={end}
         className={cn(
-          'relative flex items-center rounded-lg transition-all duration-150',
-          collapsed ? 'justify-center w-10 h-10 mx-auto' : 'gap-3 px-3 py-2.5 mx-2',
+          'relative flex items-center rounded-md transition-all duration-150 group',
+          collapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-3 px-3 py-2.5 mx-2',
+          active ? 'text-white' : 'hover:text-white',
         )}
         style={{
-          background: isActive ? ACTIVE_BG : 'transparent',
-          color: isActive ? RED : MUTED,
-          ...(isActive ? { boxShadow: `inset 3px 0 0 ${RED}` } : {}),
+          background: active ? C.active : 'transparent',
+          color: active ? C.white : C.text,
         }}
-        onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = HOVER; }}
-        onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+        onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = C.hover; }}
+        onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
       >
-        {isActive && !collapsed && (
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full"
-            style={{ height: '60%', background: RED }} />
-        )}
-        <Icon style={{ width: 17, height: 17, flexShrink: 0, color: isActive ? RED : MUTED }} />
+        {/* Red left bar on active */}
+        {active && <span className="nav-active-indicator" />}
+
+        {/* Icon — always visible */}
+        <Icon
+          style={{
+            width: 18, height: 18, flexShrink: 0,
+            color: active ? C.red : C.text,
+            transition: 'color 0.15s',
+          }}
+        />
+
+        {/* Label — hidden when collapsed */}
         {!collapsed && (
-          <span className="text-sm font-600 truncate" style={{ color: isActive ? '#fff' : MUTED, fontWeight: isActive ? 700 : 400 }}>
+          <span className="text-[13px] font-semibold tracking-wide uppercase flex-1 truncate"
+            style={{ letterSpacing: '0.06em' }}>
             {label}
           </span>
         )}
-      </span>
-    );
-
-    const link = (
-      <RRNavLink to={to} end={end} className={() => 'block'}>
-        {inner}
       </RRNavLink>
     );
 
     if (collapsed) {
       return (
         <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>{link}</TooltipTrigger>
-          <TooltipContent side="right" sideOffset={6}>
-            <span className="text-xs font-semibold">{label}</span>
+          <TooltipTrigger asChild>{inner}</TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            <span className="font-semibold text-xs uppercase tracking-wide">{label}</span>
           </TooltipContent>
         </Tooltip>
       );
     }
-    return link;
+    return inner;
   };
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
 
-      {/* ── Sidebar ──────────────────────────────────────── */}
+      {/* ── Sidebar ─────────────────────────────── */}
       <aside
-        className="sidebar-texture relative flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out"
+        className="relative flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out"
         style={{
-          width: collapsed ? 64 : 232,
-          background: BLACK,
-          borderRight: `1px solid rgba(255,255,255,0.06)`,
+          width: collapsed ? 60 : 232,
+          background: C.bg,
+          borderRight: `1px solid ${C.border}`,
         }}
       >
-        {/* Logo */}
+        {/* Logo header */}
         <div
-          className="flex items-center border-b transition-all duration-300"
+          className="flex items-center border-b"
           style={{
-            borderColor: 'rgba(255,255,255,0.06)',
+            borderColor: C.border,
             minHeight: 64,
             padding: collapsed ? '0' : '0 16px',
             justifyContent: collapsed ? 'center' : 'flex-start',
           }}
         >
           {collapsed
-            ? (
-              /* Collapsed: just the red tower */
-              <svg width="22" height="38" viewBox="0 0 26 50" fill="none">
-                <path d="M13 0 L13.8 5 L12.2 5 Z" fill={RED} />
-                <path d="M10 5 L16 5 L17 10 L17 48 L9 48 L9 10 Z" fill="white" opacity="0.9" />
-                <path d="M9 16 L9 40 L12.5 40 L12.5 36 L11.5 34 L11.5 22 L12.5 20 L12.5 16 Z" fill={BLACK} opacity="0.5" />
-              </svg>
-            )
-            : <AlhamraLogo size={34} variant="light" showText />
+            ? <AlhamraLogo size={28} variant="light" showText={false} />
+            : <AlhamraLogo size={32} variant="light" showText />
           }
         </div>
 
-        {/* Collapse toggle */}
+        {/* Collapse toggle — red button */}
         <button
           onClick={() => setCollapsed(c => !c)}
-          className="absolute -right-3 top-[50px] z-20 flex h-6 w-6 items-center justify-center rounded-full shadow-md transition-colors hover:opacity-90"
-          style={{ background: RED, border: `2px solid ${BLACK}` }}
+          className="absolute -right-3 top-[52px] z-20 flex h-6 w-6 items-center justify-center rounded-full shadow-lg transition-all hover:scale-110"
+          style={{ background: C.red, border: `2px solid ${C.bg}` }}
+          title={collapsed ? 'Expand menu' : 'Collapse menu'}
         >
           {collapsed
             ? <ChevronRight className="h-3 w-3 text-white" />
@@ -163,27 +174,25 @@ const AppLayout = () => {
         </button>
 
         {/* Nav sections */}
-        <nav className="flex-1 overflow-y-auto scrollbar-thin py-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto scrollbar-thin py-2">
           {SECTIONS.map(({ key, label, roles: sRoles, items }) => {
             if (!sRoles.includes(role)) return null;
             const visible = items.filter(i => i.roles.includes(role));
             if (!visible.length) return null;
 
             return (
-              <div key={key}>
+              <div key={key} className="mb-1">
                 {/* Section label */}
                 {!collapsed ? (
-                  <p className="px-5 pt-4 pb-1 text-[9px] uppercase tracking-[0.2em] font-bold"
-                    style={{ color: RED, opacity: 0.7 }}>
+                  <p className="px-5 pt-4 pb-1 text-[9px] font-bold uppercase tracking-[0.18em]"
+                    style={{ color: C.red, opacity: 0.85 }}>
                     {label}
                   </p>
                 ) : (
-                  key !== SECTIONS[0].key && (
-                    <div className="mx-4 my-2 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                  )
+                  <div className="mx-3 my-2 h-px" style={{ background: C.border }} />
                 )}
 
-                <div className="flex flex-col gap-0.5">
+                <div className={cn('flex flex-col', collapsed ? 'gap-1 items-center px-0' : 'gap-0.5')}>
                   {visible.map(item => (
                     <NavItem key={item.to + item.label} {...item} />
                   ))}
@@ -193,50 +202,56 @@ const AppLayout = () => {
           })}
         </nav>
 
-        {/* User footer */}
-        <div className="border-t pb-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        {/* ── User footer ─────────────────────── */}
+        <div className="border-t" style={{ borderColor: C.border }}>
           {collapsed ? (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <button
                   onClick={handleSignOut}
-                  className="flex w-full items-center justify-center py-3 transition-colors"
-                  style={{ color: MUTED }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                  onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+                  className="flex w-full items-center justify-center py-4 transition-colors"
+                  style={{ color: C.text }}
+                  onMouseEnter={e => (e.currentTarget.style.background = C.hover)}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <div className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold"
-                    style={{ background: `${RED}25`, color: RED }}>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
+                    style={{ background: `${C.red}25`, color: C.red, border: `1px solid ${C.red}40` }}>
                     {initials}
                   </div>
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={6}>
+              <TooltipContent side="right" sideOffset={8}>
                 <p className="font-semibold text-xs">{profile?.full_name}</p>
-                <p className="text-[10px] text-muted-foreground capitalize">{role} · Sign out</p>
+                <p className="text-xs text-muted-foreground capitalize">{role} · Sign out</p>
               </TooltipContent>
             </Tooltip>
           ) : (
-            <div className="mx-3 mt-3 rounded-xl p-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
-              <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ background: `${RED}25`, color: RED }}>
+            <div className="p-3">
+              <div className="flex items-center gap-2.5 rounded-md px-2 py-2.5"
+                style={{ background: '#242420' }}>
+                {/* Avatar */}
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                  style={{ background: `${C.red}25`, color: C.red, border: `1px solid ${C.red}40` }}>
                   {initials}
                 </div>
+                {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold truncate text-white">
+                  <p className="text-[13px] font-semibold truncate uppercase tracking-wide"
+                    style={{ color: C.white, letterSpacing: '0.04em' }}>
                     {profile?.full_name ?? 'User'}
                   </p>
-                  <p className="text-[10px] capitalize" style={{ color: MUTED }}>
-                    {role === 'frontdesk' ? 'Front Desk' : role}
+                  <p className="text-[10px] capitalize tracking-wider"
+                    style={{ color: C.text }}>
+                    {role}
                   </p>
                 </div>
+                {/* Sign out */}
                 <button
                   onClick={handleSignOut}
-                  className="p-1.5 rounded-lg transition-colors"
-                  style={{ color: MUTED }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = HOVER; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = MUTED; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  className="flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+                  style={{ color: C.text }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.hover; (e.currentTarget as HTMLElement).style.color = C.white; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = C.text; }}
                   title="Sign out"
                 >
                   <LogOut className="h-3.5 w-3.5" />
@@ -247,7 +262,7 @@ const AppLayout = () => {
         </div>
       </aside>
 
-      {/* ── Main ─────────────────────────────────────────── */}
+      {/* ── Main content ──────────────────────── */}
       <main className="flex-1 overflow-y-auto scrollbar-thin bg-background">
         <div className="page-enter min-h-full p-8">
           <Outlet />
