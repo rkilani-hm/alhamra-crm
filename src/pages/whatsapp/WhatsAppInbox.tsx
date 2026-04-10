@@ -3,125 +3,164 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { WaChannel, WaConversation } from '@/types';
 import { toast } from 'sonner';
-import { MessageSquare, RefreshCw, Maximize2, PanelRight } from 'lucide-react';
+import { MessageSquare, RefreshCw, Clock, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { formatDistanceToNow } from 'date-fns';
 import ContactPanel from './ContactPanel';
 
-// ── Global iFrame (shows ALL Wazzup24 chats including history) ─
-const GlobalIFrame = ({
-  onContactSelected,
+const AH = { RED: '#CD1719', DARK: '#1D1D1B', GRAY: '#B2B2B2', LIGHT: '#EDEDED' };
+
+// ── Global Wazzup24 iFrame ────────────────────────────────────
+const WazzupIFrame = ({
+  onCreateEntity,
 }: {
-  onContactSelected: (chatId: string, channelId: string, name?: string) => void;
+  onCreateEntity: (chatId: string, channelId: string) => void;
 }) => {
-  const [url,     setUrl]     = useState<string | null>(null);
+  const [url, setUrl]       = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState<string | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [error, setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const { data: res, error: e } = await supabase.functions.invoke('wazzup-iframe', {
-        body: { scope: 'global' },
+    supabase.functions.invoke('wazzup-iframe', { body: { scope: 'global' } })
+      .then(({ data, error: e }) => {
+        if (e || data?.error) setError(e?.message ?? data?.error ?? 'Failed to load');
+        else if (data?.url) setUrl(data.url);
+        setLoading(false);
       });
-
-      if (e || res?.error) {
-        setError(e?.message ?? res?.error ?? 'Failed to load inbox');
-      } else if (res?.url) {
-        setUrl(res.url);
-      }
-      setLoading(false);
-    })();
   }, []);
 
-  // Listen for postMessage events from the Wazzup24 iFrame
-  // Wazzup fires WZ_OUTPUT_MESSAGE when agent opens a chat
+  // Listen for WZ_CREATE_ENTITY — fires when agent clicks "+" (create case/deal)
+  // Requires options.useDealsEvents:true in the iFrame payload (set in edge function)
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       try {
         const d = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (d?.type === 'WZ_OUTPUT_MESSAGE' && d?.data) {
-          const { chatId, channelId, chatType } = d.data;
-          if (chatType === 'whatsapp' && chatId && channelId) {
-            onContactSelected(chatId, channelId);
-          }
+        // Log every message for debugging
+        if (d?.type) console.log('[Wazzup postMessage]', d.type, d.data);
+
+        if (
+          (d?.type === 'WZ_CREATE_ENTITY' || d?.type === 'WZ_OPEN_ENTITY') &&
+          d?.data?.chatId && d?.data?.channelId
+        ) {
+          onCreateEntity(d.data.chatId, d.data.channelId);
         }
-      } catch { /* ignore parse errors */ }
+      } catch { /* ignore */ }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [onContactSelected]);
+  }, [onCreateEntity]);
 
   if (loading) return (
     <div className="flex flex-1 items-center justify-center gap-3">
       <div className="h-5 w-5 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
-      <span className="text-sm text-muted-foreground">Loading Wazzup24 inbox…</span>
+      <span className="text-sm text-muted-foreground">Loading Wazzup24…</span>
     </div>
   );
 
   if (error) return (
-    <div className="flex flex-1 items-center justify-center p-8">
-      <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm text-red-700 max-w-sm text-center space-y-2">
-        <p className="font-medium">Could not load Wazzup24 inbox</p>
-        <p className="text-xs">{error}</p>
-        <p className="text-xs text-muted-foreground">Check that WAZZUP_API_KEY is set in Supabase edge function secrets</p>
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-5 max-w-sm text-sm space-y-2">
+        <p className="font-semibold text-red-700">Could not load Wazzup24</p>
+        <p className="text-xs text-red-600">{error}</p>
+        <p className="text-xs text-muted-foreground">
+          Make sure WAZZUP_API_KEY is set and the edge function is deployed.
+        </p>
       </div>
     </div>
   );
 
   return (
     <iframe
-      ref={iframeRef}
       src={url!}
       className="flex-1 border-0 w-full h-full"
-      allow="clipboard-write; microphone; camera"
-      title="Wazzup24 — All chats"
+      allow="microphone *; clipboard-write *"
+      title="Wazzup24 — All conversations"
     />
   );
 };
 
-// ── Scoped iFrame (single contact) ───────────────────────────
-const ScopedIFrame = ({ conversation }: { conversation: WaConversation }) => {
-  const [url,     setUrl]     = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+// ── Conversation row ──────────────────────────────────────────
+const ConvoRow = ({
+  convo, active, onClick,
+}: {
+  convo: WaConversation;
+  active: boolean;
+  onClick: () => void;
+}) => {
+  const name     = (convo as any).contacts?.name ?? `+${convo.chat_id}`;
+  const initials = name.slice(0, 2).toUpperCase();
+  const unread   = convo.unread_count ?? 0;
 
-  useEffect(() => {
-    setUrl(null);
-    setLoading(true);
-    (async () => {
-      const { data: res } = await supabase.functions.invoke('wazzup-iframe', {
-        body: {
-          scope:     'card',
-          chatId:    conversation.chat_id,
-          chatType:  'whatsapp',
-          channelId: conversation.channel_id,
-        },
-      });
-      if (res?.url) setUrl(res.url);
-      setLoading(false);
-    })();
-  }, [conversation.id]);
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-2.5 border-b text-left transition-colors"
+      style={{
+        background:  active ? `${AH.RED}10` : 'transparent',
+        borderLeft:  active ? `3px solid ${AH.RED}` : '3px solid transparent',
+      }}
+      onMouseEnter={e => { if (!active) (e.currentTarget.style.background = '#f5f5f5'); }}
+      onMouseLeave={e => { if (!active) (e.currentTarget.style.background = 'transparent'); }}
+    >
+      {/* Avatar */}
+      <div style={{
+        width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+        background: unread > 0 ? `${AH.RED}15` : '#f0f0f0',
+        border: unread > 0 ? `1.5px solid ${AH.RED}40` : '1.5px solid #ddd',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 12, fontWeight: 700,
+        color: unread > 0 ? AH.RED : AH.GRAY,
+      }}>
+        {initials}
+      </div>
 
-  if (loading) return (
-    <div className="flex flex-1 items-center justify-center gap-3">
-      <div className="h-5 w-5 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
-      <span className="text-sm text-muted-foreground">Loading chat…</span>
-    </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{
+            fontSize: 12, fontWeight: unread > 0 ? 700 : 600,
+            color: AH.DARK, letterSpacing: '0.02em',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            maxWidth: 120,
+          }}>
+            {name}
+          </p>
+          {convo.last_message_at && (
+            <span style={{ fontSize: 9, color: AH.GRAY, flexShrink: 0, marginLeft: 4 }}>
+              {formatDistanceToNow(new Date(convo.last_message_at), { addSuffix: false })}
+            </span>
+          )}
+        </div>
+        <p style={{
+          fontSize: 11, color: AH.GRAY, marginTop: 2,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {convo.last_message ?? 'Tap to create case'}
+        </p>
+      </div>
+
+      {/* Unread badge */}
+      {unread > 0 ? (
+        <span style={{
+          background: AH.RED, color: '#fff',
+          fontSize: 9, fontWeight: 700, borderRadius: 10,
+          padding: '2px 6px', flexShrink: 0,
+        }}>
+          {unread > 99 ? '99+' : unread}
+        </span>
+      ) : (
+        <ChevronRight style={{ width: 14, height: 14, color: '#ccc', flexShrink: 0 }} />
+      )}
+    </button>
   );
-
-  return url
-    ? <iframe key={url} src={url} className="flex-1 border-0 w-full h-full" allow="clipboard-write; microphone; camera" title="Chat" />
-    : <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Could not load chat</div>;
 };
 
 // ── Main inbox ────────────────────────────────────────────────
 const WhatsAppInbox = () => {
   const qc = useQueryClient();
-  const [activeConvo,   setActiveConvo]   = useState<WaConversation | null>(null);
-  const [showPanel,     setShowPanel]     = useState(true);
-  const [globalMode,    setGlobalMode]    = useState(true); // true = show full Wazzup24 inbox
+  const [activeConvo, setActiveConvo] = useState<WaConversation | null>(null);
 
-  // Channels (just to check connection status)
+  // Load channels
   const { data: channels = [] } = useQuery<WaChannel[]>({
     queryKey: ['wa_channels'],
     queryFn: async () => {
@@ -130,148 +169,213 @@ const WhatsAppInbox = () => {
     },
   });
 
-  // Recent conversations from DB
-  const { data: conversations = [] } = useQuery<WaConversation[]>({
-    queryKey: ['wa_conversations_all'],
-    refetchInterval: 30_000,
+  // Load conversations (created by webhook on new messages)
+  const { data: conversations = [], isLoading } = useQuery<WaConversation[]>({
+    queryKey: ['wa_conversations_inbox'],
+    refetchInterval: 15_000,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('wa_conversations')
         .select('*, contacts(id,name,phone,email), wa_channels(phone,label)')
         .order('last_message_at', { ascending: false, nullsFirst: false })
-        .limit(200);
+        .limit(100);
       return (data ?? []) as WaConversation[];
     },
   });
 
-  // When agent clicks a contact inside the global iFrame
-  const handleContactSelected = useCallback(async (chatId: string, channelId: string) => {
-    // Check if conversation already exists in DB
-    const existing = conversations.find(c => c.channel_id === channelId && c.chat_id === chatId);
-    if (existing) {
-      setActiveConvo(existing);
-      setGlobalMode(false);
-      return;
-    }
+  // Realtime updates
+  useEffect(() => {
+    const sub = supabase.channel('wa-inbox-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'wa_conversations' },
+        () => qc.invalidateQueries({ queryKey: ['wa_conversations_inbox'] }))
+      .subscribe();
+    return () => { supabase.removeChannel(sub); };
+  }, [qc]);
 
-    // Create it on the fly
-    const { data: conv } = await (supabase as any)
+  // Keep active convo in sync
+  useEffect(() => {
+    if (activeConvo) {
+      const updated = conversations.find(c => c.id === activeConvo.id);
+      if (updated) setActiveConvo(updated);
+    }
+  }, [conversations]);
+
+  // When agent clicks "+" in Wazzup iFrame (WZ_CREATE_ENTITY event)
+  const handleCreateEntity = useCallback(async (chatId: string, channelId: string) => {
+    const existing = conversations.find(c => c.chat_id === chatId && c.channel_id === channelId);
+    if (existing) { setActiveConvo(existing); return; }
+
+    const { data } = await (supabase as any)
       .from('wa_conversations')
       .upsert({ channel_id: channelId, chat_id: chatId }, { onConflict: 'channel_id,chat_id' })
       .select('*, contacts(id,name,phone,email), wa_channels(phone,label)')
-      .single();
+      .maybeSingle();
 
-    if (conv) {
-      qc.invalidateQueries({ queryKey: ['wa_conversations_all'] });
-      setActiveConvo(conv as WaConversation);
-      setGlobalMode(false);
-      setShowPanel(true);
+    if (data) {
+      qc.invalidateQueries({ queryKey: ['wa_conversations_inbox'] });
+      setActiveConvo(data as WaConversation);
     }
   }, [conversations, qc]);
 
-  // Sync channels + update webhook subscription
-  const syncMutation = useMutation({
+  // Sync channels
+  const sync = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('wazzup-sync');
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: d => {
       qc.invalidateQueries({ queryKey: ['wa_channels'] });
-      toast.success(`Synced ${data?.channels ?? 0} channels · webhook updated`);
+      toast.success(`${d?.channels ?? 0} channels synced`);
     },
-    onError: (e: any) => toast.error('Sync failed: ' + e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
-  const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
+  const totalUnread = conversations.reduce((s, c) => s + (c.unread_count ?? 0), 0);
 
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-xl border bg-background"
-      style={{ height: 'calc(100vh - 64px)', margin: '-2rem' }}
+      className="flex overflow-hidden rounded-xl border"
+      style={{ height: 'calc(100vh - 64px)', margin: '-2rem', background: '#fff' }}
     >
-      {/* Top bar */}
-      <div className="flex h-12 flex-shrink-0 items-center justify-between border-b px-4 bg-card">
-        <div className="flex items-center gap-3">
-          <MessageSquare className="h-4 w-4 text-green-600" />
-          <span className="font-semibold text-sm">WhatsApp</span>
-          {totalUnread > 0 && (
-            <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-green-500 px-1.5 text-[10px] font-bold text-white">
-              {totalUnread}
+      {/* ── Left sidebar — conversation list ─────────────────── */}
+      <div style={{
+        width: 280, flexShrink: 0,
+        borderRight: '1px solid #e5e5e5',
+        display: 'flex', flexDirection: 'column',
+        background: '#fff',
+      }}>
+        {/* Header */}
+        <div style={{
+          height: 52, display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', padding: '0 14px',
+          borderBottom: '1px solid #e5e5e5', flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MessageSquare style={{ width: 16, height: 16, color: '#25D366' }} />
+            <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: AH.DARK }}>
+              Inbox
             </span>
-          )}
-          {channels.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {channels.length} number{channels.length > 1 ? 's' : ''} connected
-            </span>
-          )}
+            {totalUnread > 0 && (
+              <span style={{
+                background: AH.RED, color: '#fff',
+                fontSize: 9, fontWeight: 700, borderRadius: 10, padding: '2px 7px',
+              }}>
+                {totalUnread}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => sync.mutate()}
+            disabled={sync.isPending}
+            title="Sync channels"
+            style={{ background: 'none', cursor: 'pointer', padding: 4, borderRadius: 4, color: AH.GRAY }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#f0f0f0')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <RefreshCw style={{
+              width: 14, height: 14,
+              animation: sync.isPending ? 'spin 1s linear infinite' : 'none',
+            }} />
+          </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* View mode toggle */}
-          {activeConvo && (
-            <div className="flex rounded-lg border text-xs overflow-hidden">
-              <button
-                onClick={() => setGlobalMode(true)}
-                className={cn('px-3 py-1.5 transition-colors', globalMode ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}
-              >
-                All chats
-              </button>
-              <button
-                onClick={() => setGlobalMode(false)}
-                className={cn('px-3 py-1.5 transition-colors', !globalMode ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}
-              >
-                {activeConvo.contacts?.name ?? `+${activeConvo.chat_id}`}
-              </button>
+        {/* How to create a case — tip */}
+        <div style={{
+          padding: '8px 12px',
+          background: '#fffbeb',
+          borderBottom: '1px solid #fde68a',
+          fontSize: 10, color: '#92400e', lineHeight: 1.5,
+          flexShrink: 0,
+        }}>
+          <strong>To create a case:</strong> click a conversation below → then click <strong>"New case"</strong> in the panel that opens on the right.
+          <br />In the chat window, click <strong>"+"</strong> on any contact to auto-open the panel.
+        </div>
+
+        {/* Conversation list */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
+          {isLoading && (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: AH.RED }} />
             </div>
           )}
 
-          {/* Toggle contact panel */}
-          {activeConvo && (
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowPanel(p => !p)} title="Toggle contact panel">
-              <PanelRight className="h-3.5 w-3.5" />
-            </Button>
-          )}
-
-          {/* Sync button */}
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} title="Sync channels">
-            <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground', syncMutation.isPending && 'animate-spin')} />
-          </Button>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Main: global iFrame OR scoped iFrame */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {channels.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center p-8">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50">
-                <MessageSquare className="h-8 w-8 text-green-500" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">WhatsApp Inbox</h3>
-                <p className="text-sm text-muted-foreground mt-1">No channels connected yet</p>
-              </div>
-              <Button onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="gap-2 bg-green-600 hover:bg-green-700 text-white">
-                <RefreshCw className={cn('h-4 w-4', syncMutation.isPending && 'animate-spin')} />
-                {syncMutation.isPending ? 'Connecting…' : 'Connect Wazzup24 channels'}
-              </Button>
+          {!isLoading && conversations.length === 0 && (
+            <div style={{ padding: 24, textAlign: 'center' }}>
+              <Clock style={{ width: 28, height: 28, color: '#ccc', margin: '0 auto 8px' }} />
+              <p style={{ fontSize: 12, color: AH.GRAY }}>
+                Conversations appear here when clients message you via WhatsApp.
+              </p>
+              {channels.length === 0 && (
+                <Button
+                  size="sm" className="mt-3 gap-2"
+                  onClick={() => sync.mutate()}
+                  disabled={sync.isPending}
+                >
+                  <RefreshCw className="h-3.5 w-3.5" /> Connect channels
+                </Button>
+              )}
             </div>
-          ) : globalMode ? (
-            <GlobalIFrame onContactSelected={handleContactSelected} />
-          ) : activeConvo ? (
-            <ScopedIFrame conversation={activeConvo} />
-          ) : (
-            <GlobalIFrame onContactSelected={handleContactSelected} />
           )}
-        </div>
 
-        {/* Right: contact + case panel */}
-        {activeConvo && showPanel && !globalMode && (
-          <ContactPanel conversation={activeConvo} />
-        )}
+          {conversations.map(c => (
+            <ConvoRow
+              key={c.id}
+              convo={c}
+              active={activeConvo?.id === c.id}
+              onClick={() => setActiveConvo(c)}
+            />
+          ))}
+        </div>
       </div>
+
+      {/* ── Center — Wazzup24 iFrame ──────────────────────────── */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <WazzupIFrame onCreateEntity={handleCreateEntity} />
+      </div>
+
+      {/* ── Right — Contact & Case panel ─────────────────────── */}
+      {activeConvo ? (
+        <div style={{
+          width: 300, flexShrink: 0,
+          borderLeft: '1px solid #e5e5e5',
+          overflowY: 'auto',
+        }}
+          className="scrollbar-thin"
+        >
+          <ContactPanel
+            conversation={activeConvo}
+            onClose={() => setActiveConvo(null)}
+          />
+        </div>
+      ) : (
+        <div style={{
+          width: 300, flexShrink: 0,
+          borderLeft: '1px solid #e5e5e5',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 12, padding: 24, textAlign: 'center',
+          background: '#fafafa',
+        }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 12,
+            background: `${AH.RED}10`, border: `1.5px solid ${AH.RED}20`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <MessageSquare style={{ width: 22, height: 22, color: AH.RED }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: AH.DARK, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Select a Conversation
+            </p>
+            <p style={{ fontSize: 11, color: AH.GRAY, marginTop: 6, lineHeight: 1.6 }}>
+              Click any conversation from the list on the left to view contact details and create a case.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };

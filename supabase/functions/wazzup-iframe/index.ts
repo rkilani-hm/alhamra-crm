@@ -1,7 +1,7 @@
 // Edge Function: wazzup-iframe
 // Generates a Wazzup24 iFrame URL.
-// IMPORTANT: The user.id must be a user registered in Wazzup24 via POST /v3/users.
-// We fetch the first available Wazzup24 user and use their ID.
+// Passes options.useDealsEvents: true so WZ_CREATE_ENTITY fires when
+// agent clicks "+" in the deals suitcase — enabling CRM panel to open.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
@@ -15,45 +15,39 @@ serve(async (req) => {
 
   try {
     const apiKey = Deno.env.get('WAZZUP_API_KEY');
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'WAZZUP_API_KEY secret is not set in Supabase' }), {
-        status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
+    if (!apiKey) return new Response(
+      JSON.stringify({ error: 'WAZZUP_API_KEY secret not configured' }),
+      { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } }
+    );
 
     const body = await req.json().catch(() => ({}));
     const { chatId, chatType = 'whatsapp', channelId, scope = 'global' } = body;
 
-    // ── Step 1: Get a valid Wazzup24 user ID ─────────────────
-    // The iFrame requires a user registered in Wazzup24 — not a Supabase UUID
+    // Step 1: Get a valid Wazzup24 user ID
     const usersRes = await fetch('https://api.wazzup24.com/v3/users', {
       headers: { 'Authorization': `Bearer ${apiKey}` },
     });
 
-    let wazzupUserId = 'default-agent';
+    let wazzupUserId = 'crm-agent';
     let wazzupUserName = 'CRM Agent';
 
     if (usersRes.ok) {
       const users = await usersRes.json();
-      const userList = Array.isArray(users) ? users : (users.users ?? users.data ?? []);
-      if (userList.length > 0) {
-        wazzupUserId  = userList[0].id;
-        wazzupUserName = userList[0].name ?? 'CRM Agent';
-        console.log(`Using Wazzup24 user: ${wazzupUserId} (${wazzupUserName})`);
-      } else {
-        console.log('No Wazzup24 users found — will try without user');
+      const list = Array.isArray(users) ? users : (users.users ?? users.data ?? []);
+      if (list.length > 0) {
+        wazzupUserId  = list[0].id;
+        wazzupUserName = list[0].name ?? 'CRM Agent';
       }
-    } else {
-      const errText = await usersRes.text();
-      console.error('Failed to fetch Wazzup24 users:', usersRes.status, errText);
     }
 
-    // ── Step 2: Build iFrame payload ─────────────────────────
-    // scope=global → full inbox with all conversations
-    // scope=card   → single contact view
+    // Step 2: Build payload
+    // useDealsEvents: true makes WZ_CREATE_ENTITY fire when agent clicks "+"
     const payload: Record<string, any> = {
       user: { id: wazzupUserId, name: wazzupUserName },
       scope,
+      options: {
+        useDealsEvents: true,  // enables WZ_CREATE_ENTITY + WZ_OPEN_ENTITY events
+      },
     };
 
     if (scope === 'card' && chatId) {
@@ -63,32 +57,24 @@ serve(async (req) => {
 
     console.log('Wazzup iFrame payload:', JSON.stringify(payload));
 
-    // ── Step 3: Request iFrame URL ───────────────────────────
-    const iframeRes = await fetch('https://api.wazzup24.com/v3/iframe', {
-      method:  'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type':  'application/json',
-      },
+    // Step 3: Get iFrame URL
+    const res = await fetch('https://api.wazzup24.com/v3/iframe', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    const iframeBody = await iframeRes.text();
-    console.log(`Wazzup iFrame response: ${iframeRes.status} — ${iframeBody.slice(0, 300)}`);
+    const resText = await res.text();
+    console.log(`Wazzup iFrame response: ${res.status} — ${resText.slice(0, 300)}`);
 
-    if (!iframeRes.ok) {
-      // Return a helpful error with the actual Wazzup24 response
+    if (!res.ok) {
       return new Response(JSON.stringify({
-        error: `Wazzup24 returned ${iframeRes.status}: ${iframeBody}`,
-        hint:  iframeRes.status === 401
-          ? 'Check WAZZUP_API_KEY is correct'
-          : iframeRes.status === 400
-          ? 'iFrame payload rejected — check Wazzup24 user setup'
-          : 'Wazzup24 API error',
+        error: `Wazzup24 error ${res.status}: ${resText}`,
+        hint: res.status === 401 ? 'Check WAZZUP_API_KEY' : 'Check Wazzup24 user setup',
       }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
-    const data = JSON.parse(iframeBody);
+    const data = JSON.parse(resText);
     return new Response(JSON.stringify({ url: data.url }), {
       headers: { ...CORS, 'Content-Type': 'application/json' },
     });
