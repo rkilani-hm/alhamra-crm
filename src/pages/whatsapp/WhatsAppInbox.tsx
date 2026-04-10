@@ -20,14 +20,9 @@ const GlobalIFrame = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      const userId = data?.user?.id ?? 'crm-agent';
-      const { data: p } = await supabase.from('profiles')
-        .select('full_name').eq('id', userId).maybeSingle();
-      const name = (p as any)?.full_name ?? 'CRM Agent';
-
+    (async () => {
       const { data: res, error: e } = await supabase.functions.invoke('wazzup-iframe', {
-        body: { scope: 'global', userId, username: name },
+        body: { scope: 'global' },
       });
 
       if (e || res?.error) {
@@ -36,7 +31,7 @@ const GlobalIFrame = ({
         setUrl(res.url);
       }
       setLoading(false);
-    });
+    })();
   }, []);
 
   // Listen for postMessage events from the Wazzup24 iFrame
@@ -93,25 +88,18 @@ const ScopedIFrame = ({ conversation }: { conversation: WaConversation }) => {
   useEffect(() => {
     setUrl(null);
     setLoading(true);
-    supabase.auth.getUser().then(async ({ data }) => {
-      const userId = data?.user?.id ?? 'crm-agent';
-      const { data: p } = await supabase.from('profiles')
-        .select('full_name').eq('id', userId).maybeSingle();
-      const name = (p as any)?.full_name ?? 'CRM Agent';
-
+    (async () => {
       const { data: res } = await supabase.functions.invoke('wazzup-iframe', {
         body: {
           scope:     'card',
           chatId:    conversation.chat_id,
           chatType:  'whatsapp',
           channelId: conversation.channel_id,
-          userId,
-          username:  name,
         },
       });
       if (res?.url) setUrl(res.url);
       setLoading(false);
-    });
+    })();
   }, [conversation.id]);
 
   if (loading) return (
