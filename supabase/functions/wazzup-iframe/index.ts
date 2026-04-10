@@ -22,9 +22,9 @@ serve(async (req) => {
     const { chatId, chatType = 'whatsapp', channelId } = body;
 
     // Build iframe request payload
-    const { username = 'agent', scope = 'global' } = body;
+    const { username = 'CRM Agent', userId = 'crm-agent-1', scope = 'global' } = body;
     const payload: any = {
-      user: { id: '1', name: username },
+      user: { id: userId, name: username },
       scope: scope === 'card' && chatId && channelId
         ? { chatType, chatId, channelId }
         : 'global',
