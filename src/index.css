@@ -2,83 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Al Hamra Official Brand Palette ──────────────────────────
-   Source: Al Hamra Identity Guidelines
-   Primary:   #CD1719  (R=205 G=23  B=25)
-   Gray mid:  #B2B2B2  (R=178 G=178 B=178)
-   Dark:      #1D1D1B  (R=29  G=29  B=27)
-   Light:     #EDEDED  (R=237 G=237 B=237)
-   Font:      Josefin Sans (Century Gothic substitute)
-─────────────────────────────────────────────────────────────── */
+/*
+ ╔══════════════════════════════════════════════════════════════╗
+ ║  AL HAMRA REAL ESTATE  —  Official Design System            ║
+ ║  Source: Al Hamra Identity Guidelines PDF                   ║
+ ╠══════════════════════════════════════════════════════════════╣
+ ║  Primary Red   #CD1719  →  hsl(359 80% 45%)                ║
+ ║  Gray Mid      #B2B2B2  →  hsl(0 0% 70%)                   ║
+ ║  Dark          #1D1D1B  →  hsl(80 3% 11%)                  ║
+ ║  Light         #EDEDED  →  hsl(0 0% 93%)                   ║
+ ║  Font          Century Gothic → Josefin Sans               ║
+ ╚══════════════════════════════════════════════════════════════╝
+*/
 
 @layer base {
   :root {
-    /* Brand tokens — direct from guidelines */
-    --ah-red:        205 96% 45%;      /* #CD1719 as HSL approx */
-    --ah-red-dark:   0 80% 35%;        /* darker red for hover */
-    --ah-dark:       80 3% 11%;        /* #1D1D1B */
-    --ah-gray-mid:   0 0% 70%;         /* #B2B2B2 */
-    --ah-gray-light: 0 0% 93%;         /* #EDEDED */
+    /* ── Core background & text ── */
+    --background:             0 0% 95%;         /* near #EDEDED */
+    --foreground:             80 3% 11%;         /* #1D1D1B      */
 
-    /* shadcn tokens mapped to Al Hamra palette */
-    --background:    0 0% 96%;         /* #EDEDED-ish warm light */
-    --foreground:    80 3% 11%;        /* #1D1D1B */
+    /* ── Cards & surfaces ── */
+    --card:                   0 0% 100%;
+    --card-foreground:        80 3% 11%;
+    --popover:                0 0% 100%;
+    --popover-foreground:     80 3% 11%;
 
-    --card:          0 0% 100%;
-    --card-foreground: 80 3% 11%;
+    /* ── Primary = Al Hamra Red #CD1719 ── */
+    --primary:                359 80% 45%;
+    --primary-foreground:     0 0% 100%;
 
-    --popover:       0 0% 100%;
-    --popover-foreground: 80 3% 11%;
+    /* ── Secondary = light gray ── */
+    --secondary:              0 0% 93%;
+    --secondary-foreground:   80 3% 11%;
 
-    --primary:       0 80% 45%;        /* #CD1719 red */
-    --primary-foreground: 0 0% 100%;
+    /* ── Muted ── */
+    --muted:                  0 0% 91%;
+    --muted-foreground:       0 0% 44%;
 
-    --secondary:     0 0% 93%;         /* #EDEDED */
-    --secondary-foreground: 80 3% 11%;
+    /* ── Accent ── */
+    --accent:                 0 0% 89%;
+    --accent-foreground:      80 3% 11%;
 
-    --muted:         0 0% 93%;
-    --muted-foreground: 0 0% 45%;
-
-    --accent:        0 0% 90%;
-    --accent-foreground: 80 3% 11%;
-
-    --destructive:   0 84% 50%;
+    /* ── Destructive = same red ── */
+    --destructive:            359 80% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border:        0 0% 85%;
-    --input:         0 0% 85%;
-    --ring:          0 80% 45%;
-    --radius:        0.375rem;
+    /* ── Borders & inputs ── */
+    --border:                 0 0% 84%;
+    --input:                  0 0% 84%;
+    --ring:                   359 80% 45%;
 
-    /* Sidebar — #1D1D1B dark */
-    --sidebar-bg:    80 3% 11%;        /* #1D1D1B */
-    --sidebar-hover: 80 3% 17%;
-    --sidebar-active:80 3% 20%;
-    --sidebar-text:  0 0% 72%;         /* #B2B2B2 */
-    --sidebar-text-active: 0 0% 100%;
-    --sidebar-accent: 0 80% 45%;       /* #CD1719 red for active indicator */
+    --radius:                 0.375rem;
   }
 
   .dark {
-    --background:    80 3% 8%;
-    --foreground:    0 0% 93%;
-    --card:          80 3% 11%;
-    --card-foreground: 0 0% 93%;
-    --popover:       80 3% 11%;
-    --popover-foreground: 0 0% 93%;
-    --primary:       0 75% 52%;
-    --primary-foreground: 0 0% 100%;
-    --secondary:     80 3% 17%;
-    --secondary-foreground: 0 0% 85%;
-    --muted:         80 3% 15%;
-    --muted-foreground: 0 0% 55%;
-    --accent:        80 3% 20%;
-    --accent-foreground: 0 0% 90%;
-    --destructive:   0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border:        80 3% 20%;
-    --input:         80 3% 20%;
-    --ring:          0 75% 52%;
+    --background:             80 3% 8%;
+    --foreground:             0 0% 93%;
+    --card:                   80 3% 11%;
+    --card-foreground:        0 0% 93%;
+    --popover:                80 3% 11%;
+    --popover-foreground:     0 0% 93%;
+    --primary:                359 75% 52%;
+    --primary-foreground:     0 0% 100%;
+    --secondary:              80 3% 17%;
+    --secondary-foreground:   0 0% 85%;
+    --muted:                  80 3% 15%;
+    --muted-foreground:       0 0% 55%;
+    --accent:                 80 3% 20%;
+    --accent-foreground:      0 0% 90%;
+    --destructive:            359 75% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border:                 80 3% 20%;
+    --input:                  80 3% 20%;
+    --ring:                   359 75% 52%;
   }
 }
 
@@ -87,55 +83,59 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Josefin Sans', 'Century Gothic', 'Gill Sans', 'AppleGothic', sans-serif;
+    font-family: 'Josefin Sans', 'Century Gothic', 'Gill Sans MT', 'Gill Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
-    letter-spacing: 0.01em;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4 {
+  /* Century Gothic Bold style for all headings */
+  h1, h2, h3, h4, h5, h6 {
     font-family: 'Josefin Sans', 'Century Gothic', sans-serif;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
   }
 }
 
-/* ─── Sidebar ─────────────────────────────────────────────── */
-.sidebar-bg { background: hsl(var(--sidebar-bg)); }
-
-/* Red left bar on active nav item */
-.nav-active-indicator {
+/* ── Sidebar nav: red left indicator on active item ─────── */
+.nav-active-bar {
   position: absolute;
-  left: 0; top: 50%;
+  left: 0;
+  top: 50%;
   transform: translateY(-50%);
-  width: 3px; height: 65%;
-  background: hsl(var(--sidebar-accent));
-  border-radius: 0 2px 2px 0;
+  width: 3px;
+  height: 58%;
+  background: #CD1719;
+  border-radius: 0 3px 3px 0;
 }
 
-/* ─── Scrollbar ───────────────────────────────────────────── */
+/* ── Thin scrollbars ─────────────────────────────────────── */
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--border)) transparent;
 }
-.scrollbar-thin::-webkit-scrollbar { width: 4px; }
+.scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
 .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 2px; }
 
-/* ─── Animations ──────────────────────────────────────────── */
-.page-enter { animation: pageEnter 0.15s ease-out; }
+/* ── Page entrance animation ─────────────────────────────── */
+.page-enter {
+  animation: pageEnter 0.18s ease-out both;
+}
 @keyframes pageEnter {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(5px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Stat cards ──────────────────────────────────────────── */
 .stat-card {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px -4px hsl(0 80% 45% / 0.12);
+  box-shadow: 0 8px 24px -6px rgba(205, 23, 25, 0.14);
 }
 
+/* ── Table rows ──────────────────────────────────────────── */
 .table-row-hover { transition: background 0.1s; }
 .table-row-hover:hover { background: hsl(var(--muted)); }
