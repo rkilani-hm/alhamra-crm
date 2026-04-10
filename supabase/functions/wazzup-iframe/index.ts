@@ -22,9 +22,14 @@ serve(async (req) => {
     const { chatId, chatType = 'whatsapp', channelId } = body;
 
     // Build iframe request payload
-    const payload: any = { urlType: 'simple' };
-    if (chatId && channelId) {
-      // Open a specific chat
+    const { username = 'agent', scope = 'global' } = body;
+    const payload: any = {
+      user: { id: '1', name: username },
+      scope: scope === 'card' && chatId && channelId
+        ? { chatType, chatId, channelId }
+        : 'global',
+    };
+    if (chatId && channelId && scope !== 'card') {
       payload.chatType  = chatType;
       payload.chatId    = chatId;
       payload.channelId = channelId;
