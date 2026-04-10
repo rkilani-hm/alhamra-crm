@@ -131,7 +131,7 @@ const OrganizationsList = () => {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('organizations')
-        .select('*, contacts(id), cases:cases!contact_id(id)')
+        .select('*, contacts(id)')
         .order('name');
       return (data ?? []).map((o: any) => ({
         ...o,
