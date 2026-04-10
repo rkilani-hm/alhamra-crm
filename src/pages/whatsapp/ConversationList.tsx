@@ -1,26 +1,29 @@
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { Search, RefreshCw, Phone } from 'lucide-react';
+import { Search, RefreshCw, Phone, Download, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { WaChannel, WaConversation } from '@/types';
 
 interface Props {
-  channels:       WaChannel[];
-  conversations:  WaConversation[];
-  activeChannel:  string | null;
-  activeConvo:    WaConversation | null;
-  loading:        boolean;
-  syncing:        boolean;
-  onChannelChange: (id: string) => void;
-  onSelectConvo:  (c: WaConversation) => void;
-  onSync:         () => void;
+  channels:         WaChannel[];
+  conversations:    WaConversation[];
+  activeChannel:    string | null;
+  activeConvo:      WaConversation | null;
+  loading:          boolean;
+  syncing:          boolean;
+  importingHistory: boolean;
+  onChannelChange:  (id: string) => void;
+  onSelectConvo:    (c: WaConversation) => void;
+  onSync:           () => void;
+  onImportHistory:  () => void;
 }
 
 const ConversationList = ({
   channels, conversations, activeChannel, activeConvo,
-  loading, syncing, onChannelChange, onSelectConvo, onSync,
+  loading, syncing, importingHistory,
+  onChannelChange, onSelectConvo, onSync, onImportHistory,
 }: Props) => {
   const [search, setSearch] = useState('');
 
@@ -32,6 +35,7 @@ const ConversationList = ({
   );
 
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
+  const historicalCount = conversations.filter(c => !c.last_message_at).length;
 
   return (
     <div className="flex w-[300px] flex-shrink-0 flex-col border-r bg-card">
@@ -46,10 +50,37 @@ const ConversationList = ({
             </span>
           )}
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onSync} disabled={syncing} title="Sync channels">
-          <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground', syncing && 'animate-spin')} />
-        </Button>
+        <div className="flex items-center gap-1">
+          {/* Import history button */}
+          {channels.length > 0 && (
+            <Button
+              variant="ghost" size="icon" className="h-7 w-7"
+              onClick={onImportHistory}
+              disabled={importingHistory}
+              title="Import all Wazzup24 contact history"
+            >
+              <Download className={cn('h-3.5 w-3.5 text-muted-foreground', importingHistory && 'animate-bounce')} />
+            </Button>
+          )}
+          {/* Sync channels button */}
+          <Button
+            variant="ghost" size="icon" className="h-7 w-7"
+            onClick={onSync}
+            disabled={syncing}
+            title="Sync channels from Wazzup24"
+          >
+            <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground', syncing && 'animate-spin')} />
+          </Button>
+        </div>
       </div>
+
+      {/* Import progress notice */}
+      {importingHistory && (
+        <div className="flex items-center gap-2 bg-amber-50 px-4 py-2 text-xs text-amber-700 border-b">
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-500 border-t-transparent shrink-0" />
+          Importing contacts from Wazzup24…
+        </div>
+      )}
 
       {/* Channel tabs */}
       {channels.length > 0 && (
@@ -82,13 +113,22 @@ const ConversationList = ({
         </div>
       )}
 
+      {/* Historical contacts notice */}
+      {historicalCount > 0 && (
+        <div className="flex items-center gap-2 bg-blue-50 border-b px-3 py-2 text-[10px] text-blue-600">
+          <Clock className="h-3 w-3 shrink-0" />
+          <span>{historicalCount} historical contacts — click to view full chat in Wazzup24</span>
+        </div>
+      )}
+
       {/* Search */}
       <div className="border-b px-3 py-2">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search…" className="h-8 pl-8 text-xs bg-muted/50 border-0"
+            placeholder="Search conversations…"
+            className="h-8 pl-8 text-xs bg-muted/50 border-0"
           />
         </div>
       </div>
@@ -112,15 +152,23 @@ const ConversationList = ({
         )}
 
         {!loading && channels.length > 0 && filtered.length === 0 && (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            {search ? 'No results' : 'No conversations yet'}
+          <div className="flex flex-col items-center justify-center gap-3 py-12 px-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              {search ? 'No results' : 'No conversations yet'}
+            </p>
+            {!search && (
+              <Button size="sm" variant="outline" onClick={onImportHistory} disabled={importingHistory}>
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Import contact history
+              </Button>
+            )}
           </div>
         )}
 
         {filtered.map(c => {
-          const name    = c.contacts?.name ?? `+${c.chat_id}`;
+          const name     = c.contacts?.name ?? `+${c.chat_id}`;
           const initials = name.slice(0, 2).toUpperCase();
           const isActive = activeConvo?.id === c.id;
+          const isHistorical = !c.last_message_at;
 
           return (
             <button
@@ -134,7 +182,10 @@ const ConversationList = ({
               )}
             >
               {/* Avatar */}
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-700 text-sm font-semibold">
+              <div className={cn(
+                'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
+                isHistorical ? 'bg-muted text-muted-foreground' : 'bg-green-100 text-green-700'
+              )}>
                 {initials}
               </div>
 
@@ -143,15 +194,19 @@ const ConversationList = ({
                   <p className={cn('truncate text-sm', c.unread_count > 0 ? 'font-semibold' : 'font-medium')}>
                     {name}
                   </p>
-                  {c.last_message_at && (
+                  {c.last_message_at ? (
                     <span className="ml-1 shrink-0 text-[10px] text-muted-foreground">
                       {formatDistanceToNow(new Date(c.last_message_at), { addSuffix: false })}
+                    </span>
+                  ) : (
+                    <span className="ml-1 shrink-0 text-[9px] text-muted-foreground border rounded px-1 py-px">
+                      history
                     </span>
                   )}
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className={cn('truncate text-xs', c.unread_count > 0 ? 'text-foreground' : 'text-muted-foreground')}>
-                    {c.last_message ?? 'No messages'}
+                  <p className="truncate text-xs text-muted-foreground">
+                    {c.last_message ?? 'Click to view full chat history'}
                   </p>
                   {c.unread_count > 0 && (
                     <span className="ml-1.5 flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-green-500 px-1 text-[10px] font-bold text-white">
