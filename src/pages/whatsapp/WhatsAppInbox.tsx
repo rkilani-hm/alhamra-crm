@@ -122,12 +122,13 @@ const WhatsAppInbox = () => {
             </p>
           </div>
           {channels.length === 0 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 max-w-sm text-left text-sm">
-              <p className="font-medium text-amber-800 mb-1.5">Setup checklist</p>
-              <ol className="text-amber-700 space-y-1 list-decimal list-inside text-xs">
-                <li>Set <code className="bg-amber-100 px-1 rounded">WAZZUP_API_KEY</code> in Supabase Edge Function secrets</li>
-                <li>Deploy: <code className="bg-amber-100 px-1 rounded">wazzup-sync</code>, <code className="bg-amber-100 px-1 rounded">wazzup-webhook</code>, <code className="bg-amber-100 px-1 rounded">wazzup-send</code></li>
-                <li>Click the sync button in the conversation list</li>
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4 max-w-sm text-left text-sm">
+              <p className="font-medium text-green-800 mb-1.5">Setup checklist</p>
+              <ol className="text-green-700 space-y-1 list-decimal list-inside text-xs">
+                <li className="line-through">Set <code className="bg-green-100 px-1 rounded">WAZZUP_API_KEY</code> ✓</li>
+                <li className="line-through">Deploy edge functions ✓</li>
+                <li className="line-through">Register webhook with Wazzup24 ✓</li>
+                <li>Click the <strong>sync</strong> button above to load your channels</li>
               </ol>
             </div>
           )}
