@@ -27,7 +27,16 @@ const ContactDetail = () => {
 
   const { data: contact } = useQuery<Contact & { organizations?: Organization | null; job_title?: string }>({
     queryKey: ['contact', id],
-    queryFn: async () => { const { data } = await (supabase as any).from('contacts').select('*, organizations(id,name,type)').eq('id', id).single(); return data; },
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('contacts').select('*').eq('id', id).single();
+      if (!data) return null;
+      let org = null;
+      if (data.organization_id) {
+        const { data: orgData } = await (supabase as any).from('organizations').select('id,name,type').eq('id', data.organization_id).maybeSingle();
+        org = orgData;
+      }
+      return { ...data, organizations: org };
+    },
   });
 
   useEffect(() => { if (contact) setEditForm(contact); }, [contact]);

@@ -128,11 +128,20 @@ const ContactsList = () => {
   const { data: contacts = [], isLoading } = useQuery<ContactWithOrg[]>({
     queryKey: ['contacts'],
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('contacts')
-        .select('*, organizations(id,name)')
-        .order('name');
-      return data ?? [];
+      const { data: contactData } = await (supabase as any)
+        .from('contacts').select('*').order('name');
+      if (!contactData?.length) return [];
+      const orgIds = [...new Set(contactData.map((c: any) => c.organization_id).filter(Boolean))];
+      let orgMap: Record<string, { id: string; name: string }> = {};
+      if (orgIds.length) {
+        const { data: orgData } = await (supabase as any)
+          .from('organizations').select('id,name').in('id', orgIds);
+        (orgData ?? []).forEach((o: any) => { orgMap[o.id] = o; });
+      }
+      return contactData.map((c: any) => ({
+        ...c,
+        organizations: c.organization_id ? (orgMap[c.organization_id] ?? null) : null,
+      }));
     },
     refetchInterval: 30_000,
   });
