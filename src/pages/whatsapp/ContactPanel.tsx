@@ -38,7 +38,7 @@ const ContactPanel = ({ conversation, onClose }: Props) => {
     queryFn: async () => {
       const { data } = await supabase
         .from('contacts').select('*').eq('id', conversation.contact_id!).maybeSingle();
-      return data as Contact | null;
+      return data as unknown as Contact | null;
     },
   });
 

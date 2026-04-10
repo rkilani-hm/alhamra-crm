@@ -98,7 +98,7 @@ const OrganizationDetail = () => {
         .from('organizations').select('*').eq('id', id).single();
       return data;
     },
-    onSuccess: (data: Organization) => setEditForm(data),
+    
   });
 
   // Load contacts for this org
@@ -146,11 +146,11 @@ const OrganizationDetail = () => {
     ...activities,
     ...cases.map((c: any) => ({
       id: c.id, type: 'case' as const, subject: c.subject,
-      body: `Assigned to ${c.departments?.name ?? 'Unknown dept'} · Priority: ${c.priority}`,
+      body: `${c.inquiry_type ?? ''} · ${c.channel}`,
       created_at: c.created_at, done: c.status === 'done',
       contacts: c.contacts, departments: c.departments,
       profiles: c.profiles, organization_id: id,
-      outcome: null, body: `${c.inquiry_type ?? ''} · ${c.channel}`,
+      outcome: null,
     })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
