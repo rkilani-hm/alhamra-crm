@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -100,6 +100,8 @@ const OrganizationDetail = () => {
     },
     
   });
+
+  useEffect(() => { if (org) setEditForm(org); }, [org]);
 
   // Load contacts for this org
   const { data: contacts = [] } = useQuery<Contact[]>({
