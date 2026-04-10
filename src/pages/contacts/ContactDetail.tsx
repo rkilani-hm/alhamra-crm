@@ -109,9 +109,9 @@ const ContactDetail = () => {
                     <Input value={(editForm as any)[k] ?? ''} onChange={ef(k)} className="h-7 text-xs mt-0.5" /></div>
                 ))}
                 <div><Label className="text-[10px]">Organization</Label>
-                  <Select value={(editForm as any).organization_id ?? ''} onValueChange={v => setEditForm((p: any) => ({ ...p, organization_id: v }))}>
+                  <Select value={(editForm as any).organization_id || '__none__'} onValueChange={v => setEditForm((p: any) => ({ ...p, organization_id: v === '__none__' ? '' : v }))}>
                     <SelectTrigger className="h-7 mt-0.5 text-xs"><SelectValue placeholder="None" /></SelectTrigger>
-                    <SelectContent><SelectItem value="">None</SelectItem>{orgs.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                    <SelectContent><SelectItem value="__none__">None</SelectItem>{orgs.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>

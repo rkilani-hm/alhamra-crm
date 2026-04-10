@@ -79,10 +79,10 @@ const NewContactModal = ({ open, onClose, defaultOrgId }: { open: boolean; onClo
           <div><Label className="text-xs">Job title</Label>
             <Input value={form.job_title} onChange={f('job_title')} placeholder="FM Manager, CEO…" className="h-9 mt-1 text-xs" /></div>
           <div><Label className="text-xs">Organization</Label>
-            <Select value={form.organization_id} onValueChange={v => setForm(p => ({ ...p, organization_id: v }))}>
+            <Select value={form.organization_id || '__none__'} onValueChange={v => setForm(p => ({ ...p, organization_id: v === '__none__' ? '' : v }))}>
               <SelectTrigger className="h-9 mt-1 text-xs"><SelectValue placeholder="None" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {orgs.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
               </SelectContent>
             </Select>

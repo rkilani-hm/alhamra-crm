@@ -62,8 +62,8 @@ const LogActivityModal = ({ open, onClose, organizationId, contactId, caseId, de
         subject:         subject.trim(),
         body:            body || null,
         outcome:         outcome || null,
-        organization_id: orgId   || organizationId || null,
-        contact_id:      contId  || contactId      || null,
+        organization_id: (orgId  === '__none__' ? '' : orgId)  || organizationId || null,
+        contact_id:      (contId === '__none__' ? '' : contId) || contactId      || null,
         case_id:         caseId  || null,
         scheduled_at:    scheduledAt || null,
         duration_min:    durationMin ? parseInt(durationMin) : null,
@@ -121,10 +121,10 @@ const LogActivityModal = ({ open, onClose, organizationId, contactId, caseId, de
             {!organizationId && (
               <div>
                 <Label className="text-xs">Organization</Label>
-                <Select value={orgId} onValueChange={setOrgId}>
+                <Select value={orgId || '__none__'} onValueChange={v => setOrgId(v === '__none__' ? '' : v)}>
                   <SelectTrigger className="h-9 mt-1 text-xs"><SelectValue placeholder="Select org…" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {orgs.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -134,10 +134,10 @@ const LogActivityModal = ({ open, onClose, organizationId, contactId, caseId, de
             {!contactId && (
               <div>
                 <Label className="text-xs">Contact person</Label>
-                <Select value={contId} onValueChange={setContId}>
+                <Select value={contId || '__none__'} onValueChange={v => setContId(v === '__none__' ? '' : v)}>
                   <SelectTrigger className="h-9 mt-1 text-xs"><SelectValue placeholder="Select contact…" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {contacts.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
