@@ -1,8 +1,6 @@
 // Supabase Edge Function: wazzup-iframe
 // Generates a Wazzup24 iFrame URL for embedding the chat window
 // Called by the frontend WhatsApp page
-// Deploy: supabase functions deploy wazzup-iframe
-// Secret: supabase secrets set WAZZUP_API_KEY=036cd96a1db3412d89723ed34675ba2b
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
@@ -19,21 +17,32 @@ serve(async (req) => {
     if (!apiKey) throw new Error('WAZZUP_API_KEY not configured');
 
     const body = await req.json().catch(() => ({}));
-    const { chatId, chatType = 'whatsapp', channelId } = body;
+    const {
+      chatId,
+      chatType = 'whatsapp',
+      channelId,
+      username = 'CRM Agent',
+      userId = 'crm-agent-1',
+      scope = 'global',
+    } = body;
 
-    // Build iframe request payload
-    const { username = 'CRM Agent', userId = 'crm-agent-1', scope = 'global' } = body;
+    // Build iframe request payload per Wazzup24 docs:
+    // scope "global" → all chats
+    // scope "card"   → requires filter array [{chatType, chatId}]
     const payload: any = {
       user: { id: userId, name: username },
-      scope: scope === 'card' && chatId && channelId
-        ? { chatType, chatId, channelId }
-        : 'global',
+      scope,
     };
-    if (chatId && channelId && scope !== 'card') {
-      payload.chatType  = chatType;
-      payload.chatId    = chatId;
-      payload.channelId = channelId;
+
+    if (scope === 'card' && chatId) {
+      payload.filter = [{ chatType, chatId }];
+      // Also set activeChat so the iframe opens on this chat
+      if (channelId) {
+        payload.activeChat = { chatType, chatId, channelId };
+      }
     }
+
+    console.log('Wazzup iframe payload:', JSON.stringify(payload));
 
     const res = await fetch('https://api.wazzup24.com/v3/iframe', {
       method:  'POST',
