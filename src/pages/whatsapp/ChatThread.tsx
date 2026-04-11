@@ -5,7 +5,7 @@ import { WaConversation, WaMessage } from '@/types';
 import MessageBubble from './MessageBubble';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Send, Smile, Paperclip, Phone, MessageCircle, ExternalLink } from 'lucide-react';
+import { Send, Paperclip, Phone, MessageCircle, ExternalLink, X, Image, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +28,17 @@ const TODAY     = format(new Date(), 'dd MMM yyyy');
 const YESTERDAY = format(new Date(Date.now() - 86400000), 'dd MMM yyyy');
 const friendlyDate = (d: string) => d === TODAY ? 'Today' : d === YESTERDAY ? 'Yesterday' : d;
 
+const isImageFile = (f: File) => f.type.startsWith('image/');
+const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16 MB
+
+// Determine msg_type from file MIME
+const getMsgType = (file: File): string => {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('video/')) return 'video';
+  if (file.type.startsWith('audio/')) return 'audio';
+  return 'document';
+};
+
 interface Props {
   conversation: WaConversation;
 }
@@ -37,15 +48,18 @@ type ViewMode = 'local' | 'iframe';
 const ChatThread = ({ conversation }: Props) => {
   const qc        = useQueryClient();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileRef   = useRef<HTMLInputElement>(null);
   const [text, setText]       = useState('');
   const [sending, setSending] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('iframe');
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachPreview, setAttachPreview] = useState<string | null>(null);
 
   // Fetch iframe URL
   const { data: iframeUrl, isLoading: iframeLoading } = useQuery<string | null>({
     queryKey: ['wazzup_iframe', conversation.channel_id, conversation.chat_id],
     enabled: viewMode === 'iframe',
-    staleTime: 1000 * 60 * 25, // iframe tokens typically last ~8h, refresh at 25min
+    staleTime: 1000 * 60 * 25,
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('wazzup-iframe', {
         body: {
@@ -60,7 +74,7 @@ const ChatThread = ({ conversation }: Props) => {
     },
   });
 
-  // Fetch local messages (for "local" mode)
+  // Fetch local messages
   const { data: messages = [], isLoading } = useQuery<WaMessage[]>({
     queryKey: ['wa_messages', conversation.id],
     enabled: viewMode === 'local',
@@ -75,7 +89,7 @@ const ChatThread = ({ conversation }: Props) => {
     refetchInterval: 5000,
   });
 
-  // Realtime subscription for this conversation
+  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel(`messages-${conversation.id}`)
@@ -88,32 +102,89 @@ const ChatThread = ({ conversation }: Props) => {
       })
       .subscribe();
 
-    // Mark as read
     (supabase as any).from('wa_conversations').update({ unread_count: 0 }).eq('id', conversation.id);
 
     return () => { supabase.removeChannel(channel); };
   }, [conversation.id, qc]);
 
-  // Auto-scroll to bottom on new messages (local mode)
+  // Auto-scroll
   useEffect(() => {
     if (viewMode === 'local') {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages.length, viewMode]);
 
-  // Send message (local mode)
+  // Clean up preview URL on unmount or change
+  useEffect(() => {
+    return () => {
+      if (attachPreview) URL.revokeObjectURL(attachPreview);
+    };
+  }, [attachPreview]);
+
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File is too large. Maximum size is 16 MB.');
+      return;
+    }
+    setAttachment(file);
+    if (isImageFile(file)) {
+      setAttachPreview(URL.createObjectURL(file));
+    } else {
+      setAttachPreview(null);
+    }
+    // Switch to local mode for sending
+    if (viewMode !== 'local') setViewMode('local');
+  };
+
+  const clearAttachment = () => {
+    setAttachment(null);
+    if (attachPreview) URL.revokeObjectURL(attachPreview);
+    setAttachPreview(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  // Upload to storage, then send via edge function
   const handleSend = async () => {
     const body = text.trim();
-    if (!body || sending) return;
+    if ((!body && !attachment) || sending) return;
     setSending(true);
     setText('');
+
     try {
+      let contentUri: string | undefined;
+      let msgType: string | undefined;
+
+      // Upload attachment if present
+      if (attachment) {
+        const ext = attachment.name.split('.').pop() || 'bin';
+        const path = `${conversation.id}/${crypto.randomUUID()}.${ext}`;
+
+        const { error: upErr } = await supabase.storage
+          .from('wa-attachments')
+          .upload(path, attachment, { contentType: attachment.type, upsert: false });
+
+        if (upErr) throw new Error('Upload failed: ' + upErr.message);
+
+        const { data: urlData } = supabase.storage
+          .from('wa-attachments')
+          .getPublicUrl(path);
+
+        contentUri = urlData.publicUrl;
+        msgType = getMsgType(attachment);
+        clearAttachment();
+      }
+
       const { error } = await supabase.functions.invoke('wazzup-send', {
         body: {
           channelId:      conversation.channel_id,
           chatId:         conversation.chat_id,
-          text:           body,
+          text:           body || undefined,
           conversationId: conversation.id,
+          contentUri,
+          msgType,
         },
       });
       if (error) throw error;
@@ -132,6 +203,7 @@ const ChatThread = ({ conversation }: Props) => {
 
   const groups = groupByDate(messages);
   const contactName = conversation.contacts?.name ?? `+${conversation.chat_id}`;
+  const canSend = (text.trim() || attachment) && !sending;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -245,10 +317,47 @@ const ChatThread = ({ conversation }: Props) => {
             <div ref={bottomRef} />
           </div>
 
+          {/* Attachment preview bar */}
+          {attachment && (
+            <div className="flex items-center gap-3 border-t bg-muted/30 px-4 py-2">
+              {attachPreview ? (
+                <img src={attachPreview} alt="preview" className="h-14 w-14 rounded-lg object-cover border" />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg border bg-muted">
+                  <FileText className="h-6 w-6 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">{attachment.name}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {(attachment.size / 1024).toFixed(0)} KB · {attachment.type || 'unknown'}
+                </p>
+              </div>
+              <button
+                onClick={clearAttachment}
+                className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-muted transition-colors"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+          )}
+
           {/* Reply box */}
           <div className="flex-shrink-0 border-t bg-card px-4 py-3">
             <div className="flex items-end gap-2">
-              <button className="mb-2 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-muted" title="Attach">
+              {/* Hidden file input */}
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt,.csv"
+                onChange={handleFileSelect}
+              />
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="mb-2 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                title="Attach file"
+              >
                 <Paperclip className="h-4 w-4 text-muted-foreground" />
               </button>
               <div className="flex-1 relative">
@@ -256,25 +365,26 @@ const ChatThread = ({ conversation }: Props) => {
                   value={text}
                   onChange={e => setText(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+                  placeholder={attachment ? 'Add a caption… (optional)' : 'Type a message… (Enter to send)'}
                   className="min-h-[40px] max-h-[120px] resize-none rounded-2xl border-muted bg-muted/50 pr-10 text-sm"
                   rows={1}
                 />
-                <button className="absolute right-2.5 bottom-2 text-muted-foreground hover:text-foreground">
-                  <Smile className="h-4 w-4" />
-                </button>
               </div>
               <button
                 onClick={handleSend}
-                disabled={!text.trim() || sending}
+                disabled={!canSend}
                 className={cn(
                   'mb-0.5 flex h-9 w-9 items-center justify-center rounded-full transition-all',
-                  text.trim() && !sending
+                  canSend
                     ? 'bg-green-500 text-white hover:bg-green-600 shadow-sm'
                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                 )}
               >
-                <Send className="h-4 w-4" />
+                {sending ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>
