@@ -330,6 +330,7 @@ export type Database = {
           id: string
           industry: string | null
           name: string
+          name_arabic: string | null
           owner_id: string | null
           phone: string | null
           sap_bp_number: string | null
@@ -348,6 +349,7 @@ export type Database = {
           id?: string
           industry?: string | null
           name: string
+          name_arabic?: string | null
           owner_id?: string | null
           phone?: string | null
           sap_bp_number?: string | null
@@ -366,6 +368,7 @@ export type Database = {
           id?: string
           industry?: string | null
           name?: string
+          name_arabic?: string | null
           owner_id?: string | null
           phone?: string | null
           sap_bp_number?: string | null
