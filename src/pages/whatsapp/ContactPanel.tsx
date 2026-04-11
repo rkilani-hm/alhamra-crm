@@ -53,7 +53,7 @@ const ContactPanel = ({ conversation, onClose }: Props) => {
         .eq('contact_id', conversation.contact_id!)
         .order('created_at', { ascending: false })
         .limit(5);
-      return (data ?? []) as Case[];
+      return (data ?? []) as unknown as Case[];
     },
   });
 
