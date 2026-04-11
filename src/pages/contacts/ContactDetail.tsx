@@ -12,10 +12,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { ActivityIcon } from '@/components/crm/ActivityIcon';
 import LogActivityModal from '@/components/crm/LogActivityModal';
 import WaThreadPreview from '@/components/crm/WaThreadPreview';
+import WazzupChatPanel from '@/components/crm/WazzupChatPanel';
 import { Phone, Mail, Building2, ChevronLeft, Plus, Edit2, Save, X, Briefcase, LayoutList, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Tab = 'timeline' | 'cases' | 'activities';
+type Tab = 'timeline' | 'cases' | 'activities' | 'whatsapp';
 
 type ContactRecord = Contact & {
   organizations?: Organization | null;
@@ -195,12 +196,12 @@ const ContactDetail = () => {
         {/* Tabs */}
         <div className="flex-1 min-w-0">
           <div className="flex border-b mb-4">
-            {(['timeline','cases','activities'] as Tab[]).map(t => (
+            {(['timeline','cases','activities','whatsapp'] as Tab[]).map(t => (
               <button key={t} onClick={() => setTab(t)}
                 className={cn('px-4 py-2.5 text-sm font-medium capitalize border-b-2 -mb-px transition-colors',
                   tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
                 {t} <span className="ml-1 text-[10px] text-muted-foreground">
-                  {t === 'cases' ? cases.length : t === 'activities' ? activities.length : timeline.length}
+                  {t === 'cases' ? cases.length : t === 'activities' ? activities.length : t === 'whatsapp' ? '' : timeline.length}
                 </span>
               </button>
             ))}

@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ActivityIcon, ACTIVITY_CONFIG } from '@/components/crm/ActivityIcon';
 import LogActivityModal from '@/components/crm/LogActivityModal';
+import WazzupChatPanel from '@/components/crm/WazzupChatPanel';
 import WaThreadPreview from '@/components/crm/WaThreadPreview';
 import {
   Building2, Phone, Mail, Globe, MapPin, Edit2, Save, X,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const TABS = ['timeline','contacts','cases','activities','notes'] as const;
+const TABS = ['timeline','contacts','cases','activities','notes','whatsapp'] as const;
 type Tab = typeof TABS[number];
 
 // ── Timeline item ─────────────────────────────────────────────
@@ -488,6 +489,28 @@ const OrganizationDetail = () => {
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+
+          {tab === 'whatsapp' && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">{contacts.length} contacts — click a contact to open their WhatsApp chat</p>
+              {contacts.length === 0 && (
+                <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+                  No contacts linked to this organization yet
+                </div>
+              )}
+              {contacts.map(c => {
+                if (!c.phone) return null;
+                return (
+                  <WazzupChatPanel
+                    key={c.id}
+                    chatId={c.phone.replace(/\D/g, '')}
+                    contactName={c.name}
+                    height={400}
+                  />
+                );
+              })}
             </div>
           )}
         </div>

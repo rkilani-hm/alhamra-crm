@@ -1,7 +1,9 @@
-// Supabase Edge Function: wazzup-sync
+// Edge Function: wazzup-sync
 // Fetches connected channels from Wazzup24 and upserts into wa_channels table
-// Also registers the webhook URL with Wazzup24
-// Run once after deploying: call via Supabase dashboard or curl
+// Registers webhook with BOTH subscriptions:
+//   - messagesAndStatuses: true  (live messages)
+//   - contactsAndDealsCreation: true (auto-create contacts/cases on first message)
+//
 // Deploy: supabase functions deploy wazzup-sync
 
 import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -22,13 +24,16 @@ serve(async (req) => {
   );
 
   try {
-    // 1. Fetch channels
+    // 1. Fetch channels from Wazzup24
     const channelsRes = await fetch('https://api.wazzup24.com/v3/channels', {
       headers: { 'Authorization': `Bearer ${apiKey}` },
     });
-    const channelsBody = await channelsRes.json();
-    const channels: any[] = Array.isArray(channelsBody) ? channelsBody : (channelsBody.channels ?? channelsBody.data ?? []);
-    console.log('Wazzup channels response:', JSON.stringify(channelsBody).slice(0, 500));
+    const channelsBody = await channelsRes.json().catch(() => ({}));
+    const channels: any[] = Array.isArray(channelsBody)
+      ? channelsBody
+      : (channelsBody.channels ?? channelsBody.data ?? []);
+
+    console.log('Wazzup channels:', JSON.stringify(channelsBody).slice(0, 500));
 
     // 2. Upsert into wa_channels
     const waChannels = channels
@@ -45,9 +50,9 @@ serve(async (req) => {
       await supabase.from('wa_channels').upsert(waChannels, { onConflict: 'channel_id' });
     }
 
-    // 3. Register webhook URL
+    // 3. Register webhook with BOTH subscriptions
     const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/wazzup-webhook`;
-    await fetch('https://api.wazzup24.com/v3/webhooks', {
+    const webhookRes = await fetch('https://api.wazzup24.com/v3/webhooks', {
       method:  'PATCH',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -55,17 +60,25 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         webhooksUri:   webhookUrl,
-        subscriptions: { messagesAndStatuses: true },
+        subscriptions: {
+          messagesAndStatuses:     true,  // live messages + delivery status
+          contactsAndDealsCreation: true, // auto-create contacts/cases on new client
+        },
       }),
     });
+
+    const webhookData = await webhookRes.json().catch(() => ({}));
+    console.log('Webhook registration:', JSON.stringify(webhookData));
 
     return new Response(JSON.stringify({
       ok:       true,
       channels: waChannels.length,
       webhook:  webhookUrl,
+      webhookStatus: webhookRes.status,
     }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
 
   } catch (err: any) {
+    console.error('Sync error:', err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...CORS, 'Content-Type': 'application/json' },

@@ -1,7 +1,8 @@
-// Supabase Edge Function: wazzup-webhook
-// Receives inbound messages from Wazzup24 and stores them in Supabase.
-// Also writes/updates an activity record of type 'whatsapp' per conversation
-// so that contact timelines and organization master data show WhatsApp history.
+// Edge Function: wazzup-webhook
+// Handles ALL Wazzup24 webhook types:
+//   - messages / statuses  → store in wa_messages, update activities
+//   - createContact        → auto-create CRM contact, respond with JSON
+//   - createDeal           → auto-create CRM case, respond with JSON
 //
 // Deploy: supabase functions deploy wazzup-webhook --no-verify-jwt
 
@@ -13,13 +14,15 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const CRM_BASE = 'https://alhamra-crm.lovable.app';
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {
     const body = await req.json();
 
-    // Wazzup sends { test: true } when registering the webhook — respond 200
+    // Test ping from Wazzup when registering webhook
     if (body.test) {
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...CORS, 'Content-Type': 'application/json' },
@@ -31,7 +34,129 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // ── Process incoming messages ──────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // WEBHOOK TYPE 1: createContact
+    // Wazzup fires this when a new unknown number messages first.
+    // We must create the contact in CRM and respond with the entity.
+    // ══════════════════════════════════════════════════════════
+    if (body.createContact) {
+      const { createContact } = body;
+      const { name, contactData, responsibleUserId, source } = createContact;
+
+      // contactData = [{ chatType: 'whatsapp', chatId: '96599...' }]
+      const waContact = contactData?.[0];
+      const chatId = waContact?.chatId ?? '';
+      const cleanPhone = chatId.replace(/\D/g, '');
+
+      console.log('createContact webhook:', JSON.stringify(createContact));
+
+      // Check if contact already exists (may have been created manually)
+      const { data: existing } = await supabase
+        .from('contacts')
+        .select('id, name, phone')
+        .or(`phone.eq.${cleanPhone},phone.eq.+${cleanPhone}`)
+        .maybeSingle();
+
+      if (existing) {
+        // Return existing contact in Wazzup's expected format
+        return new Response(JSON.stringify({
+          id:          existing.id,
+          name:        existing.name,
+          contactData: [{ chatType: 'whatsapp', chatId: cleanPhone }],
+          uri:         `${CRM_BASE}/contacts/${existing.id}`,
+        }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
+      }
+
+      // Create new contact
+      const contactName = name || `+${cleanPhone}`;
+      const { data: newContact, error } = await supabase
+        .from('contacts')
+        .insert({
+          name:   contactName,
+          phone:  `+${cleanPhone}`,
+          source: 'whatsapp',
+        })
+        .select('id, name')
+        .single();
+
+      if (error) {
+        console.error('createContact insert error:', error);
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...CORS, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Created contact:', newContact.id, newContact.name);
+
+      // Respond with the new contact entity — Wazzup stores our ID and links future webhooks
+      return new Response(JSON.stringify({
+        id:          newContact.id,
+        name:        newContact.name,
+        contactData: [{ chatType: 'whatsapp', chatId: cleanPhone }],
+        uri:         `${CRM_BASE}/contacts/${newContact.id}`,
+      }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // WEBHOOK TYPE 2: createDeal
+    // Wazzup fires this after createContact succeeds.
+    // We create a case and link it to the contact.
+    // ══════════════════════════════════════════════════════════
+    if (body.createDeal) {
+      const { createDeal } = body;
+      const { responsibleUserId, contacts: dealContacts, source } = createDeal;
+
+      console.log('createDeal webhook:', JSON.stringify(createDeal));
+
+      // dealContacts = array of contact IDs we returned in createContact
+      const contactId = dealContacts?.[0] ?? null;
+
+      // Find contact to get their name for subject
+      let contactName = 'WhatsApp Client';
+      if (contactId) {
+        const { data: c } = await supabase
+          .from('contacts').select('name, phone').eq('id', contactId).maybeSingle();
+        if (c) contactName = c.name;
+      }
+
+      // Create case in CRM (deals = cases in our model)
+      const { data: newCase, error } = await supabase
+        .from('cases')
+        .insert({
+          contact_id:   contactId,
+          channel:      'whatsapp',
+          inquiry_type: 'general',
+          subject:      `WhatsApp enquiry — ${contactName}`,
+          priority:     'normal',
+          status:       'new',
+          // assigned to responsible user if we have them
+          created_by:   responsibleUserId ?? null,
+        })
+        .select('id, subject')
+        .single();
+
+      if (error) {
+        console.error('createDeal insert error:', error);
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...CORS, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Created case:', newCase.id, newCase.subject);
+
+      // Respond in Wazzup's expected deal format
+      return new Response(JSON.stringify({
+        id:       newCase.id,
+        contacts: contactId ? [contactId] : [],
+        uri:      `${CRM_BASE}/follow-up`,
+      }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // WEBHOOK TYPE 3: messages + statuses (existing logic)
+    // ══════════════════════════════════════════════════════════
     const messages: any[] = body.messages ?? [];
 
     for (const msg of messages) {
@@ -43,7 +168,7 @@ serve(async (req) => {
 
       if (chatType !== 'whatsapp') continue;
 
-      // ── 1. Upsert wa_conversation ──────────────────────────
+      // 1. Upsert wa_conversation
       const { data: conv, error: convErr } = await supabase
         .from('wa_conversations')
         .upsert(
@@ -53,12 +178,9 @@ serve(async (req) => {
         .select('id, contact_id, unread_count')
         .single();
 
-      if (convErr || !conv) {
-        console.error('Conversation upsert failed:', convErr);
-        continue;
-      }
+      if (convErr || !conv) { console.error('Conversation upsert failed:', convErr); continue; }
 
-      // ── 2. Auto-match or create contact by phone ──────────
+      // 2. Auto-match contact by phone
       let contactId: string | null = conv.contact_id ?? null;
 
       if (!contactId) {
@@ -71,33 +193,20 @@ serve(async (req) => {
 
         if (existingContact) {
           contactId = existingContact.id;
-          await supabase
-            .from('wa_conversations')
-            .update({ contact_id: contactId })
-            .eq('id', conv.id);
+          await supabase.from('wa_conversations').update({ contact_id: contactId }).eq('id', conv.id);
         } else if (contact?.name) {
-          // Auto-create contact from Wazzup24 data
           const { data: newContact } = await supabase
             .from('contacts')
-            .insert({
-              name:   contact.name,
-              phone:  `+${cleanPhone}`,
-              source: 'whatsapp',
-            })
-            .select('id')
-            .maybeSingle();
-
+            .insert({ name: contact.name, phone: `+${chatId.replace(/\D/g,'')}`, source: 'whatsapp' })
+            .select('id').maybeSingle();
           if (newContact) {
             contactId = newContact.id;
-            await supabase
-              .from('wa_conversations')
-              .update({ contact_id: contactId })
-              .eq('id', conv.id);
+            await supabase.from('wa_conversations').update({ contact_id: contactId }).eq('id', conv.id);
           }
         }
       }
 
-      // ── 3. Store message ───────────────────────────────────
+      // 3. Store message
       const direction = isEcho ? 'outbound' : 'inbound';
       const messageBody = text ?? null;
       const sentAt = dateTime ?? new Date().toISOString();
@@ -117,7 +226,7 @@ serve(async (req) => {
         { onConflict: 'wazzup_id', ignoreDuplicates: true }
       );
 
-      // ── 4. Update conversation last_message + unread count ─
+      // 4. Update conversation last_message
       const lastMessageText = messageBody ?? `[${type ?? 'media'}]`;
       if (!isEcho) {
         await supabase.from('wa_conversations').update({
@@ -127,83 +236,48 @@ serve(async (req) => {
         }).eq('id', conv.id);
       }
 
-      // ── 5. Sync to activities table ───────────────────────
-      // One activity record per wa_conversation, upserted on every message.
-      // This makes WhatsApp threads visible on contact & org timelines.
+      // 5. Sync to activities table for contact/org timelines
       if (contactId) {
-        // Look up the contact's organization_id
         const { data: contactRow } = await supabase
-          .from('contacts')
-          .select('organization_id, name')
-          .eq('id', contactId)
-          .maybeSingle();
+          .from('contacts').select('organization_id, name').eq('id', contactId).maybeSingle();
 
-        const organizationId: string | null = contactRow?.organization_id ?? null;
-        const contactName   = contactRow?.name ?? contact?.name ?? `+${chatId}`;
+        const organizationId = contactRow?.organization_id ?? null;
+        const contactName    = contactRow?.name ?? contact?.name ?? `+${chatId}`;
+        const preview        = messageBody ? messageBody.slice(0, 80) : `[${type ?? 'media'}]`;
 
-        // Build a meaningful subject
-        const preview = messageBody
-          ? messageBody.slice(0, 80)
-          : `[${type ?? 'media'}]`;
-
-        const subject = `WhatsApp · ${contactName}`;
-        const body_text = preview;
-
-        // Check if an activity already exists for this conversation
         const { data: existingActivity } = await supabase
-          .from('activities')
-          .select('id')
-          .eq('type', 'whatsapp')
-          .eq('contact_id', contactId)
-          // Use case_id as a stable key to store conv.id (avoids extra column)
-          // Actually use body matching — simpler: filter by subject + contact
-          // Best: store conv.id in outcome field as a stable identifier
-          .eq('outcome', `wa:${conv.id}`)
-          .maybeSingle();
+          .from('activities').select('id')
+          .eq('type', 'whatsapp').eq('contact_id', contactId)
+          .eq('outcome', `wa:${conv.id}`).maybeSingle();
 
         if (existingActivity) {
-          // Update body with latest message preview + bump updated_at
-          await supabase
-            .from('activities')
-            .update({
-              body:       body_text,
-              updated_at: sentAt,
-            })
+          await supabase.from('activities').update({ body: preview, updated_at: sentAt })
             .eq('id', existingActivity.id);
         } else {
-          // Create new activity for this conversation
           await supabase.from('activities').insert({
             type:            'whatsapp',
-            subject,
-            body:            body_text,
-            outcome:         `wa:${conv.id}`,   // stable key linking back to conversation
+            subject:         `WhatsApp · ${contactName}`,
+            body:            preview,
+            outcome:         `wa:${conv.id}`,
             contact_id:      contactId,
             organization_id: organizationId,
             scheduled_at:    sentAt,
             done:            false,
-            created_by:      null,              // system-generated
+            created_by:      null,
           });
         }
 
-        // If organization_id was just discovered, make sure existing
-        // activity also has it (handles the case where contact was linked later)
         if (organizationId && existingActivity) {
-          await supabase
-            .from('activities')
-            .update({ organization_id: organizationId })
-            .eq('id', existingActivity.id)
-            .is('organization_id', null);
+          await supabase.from('activities').update({ organization_id: organizationId })
+            .eq('id', existingActivity.id).is('organization_id', null);
         }
       }
     }
 
-    // ── Process message status updates ────────────────────────
+    // Process status updates
     const statuses: any[] = body.statuses ?? [];
     for (const s of statuses) {
-      await supabase
-        .from('wa_messages')
-        .update({ status: s.status })
-        .eq('wazzup_id', s.messageId);
+      await supabase.from('wa_messages').update({ status: s.status }).eq('wazzup_id', s.messageId);
     }
 
     return new Response(JSON.stringify({ ok: true, processed: messages.length }), {

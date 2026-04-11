@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { WaChannel, WaConversation } from '@/types';
 import { toast } from 'sonner';
-import { MessageSquare, RefreshCw, Clock, ChevronRight } from 'lucide-react';
+import { MessageSquare, RefreshCw, Clock, ChevronRight, Upload, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -218,6 +218,28 @@ const WhatsAppInbox = () => {
   }, [conversations, qc]);
 
   // Sync channels
+  // Push CRM contacts TO Wazzup (bidirectional sync)
+  const pushContacts = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('wazzup-push-contacts');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (d) => toast.success(`${d?.pushed ?? 0} contacts pushed to Wazzup24`),
+    onError: (e: any) => toast.error('Push failed: ' + e.message),
+  });
+
+  // Push CRM users TO Wazzup
+  const pushUsers = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('wazzup-push-users');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (d) => toast.success(`${d?.pushed ?? 0} users synced to Wazzup24`),
+    onError: (e: any) => toast.error('User push failed: ' + e.message),
+  });
+
   const sync = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('wazzup-sync');
@@ -266,7 +288,12 @@ const WhatsAppInbox = () => {
             )}
           </div>
           <button
-            onClick={() => sync.mutate()}
+            onClick={() => {
+              sync.mutate();
+              // Also push contacts + users on every sync
+              setTimeout(() => pushContacts.mutate(), 1000);
+              setTimeout(() => pushUsers.mutate(), 2000);
+            }}
             disabled={sync.isPending}
             title="Sync channels"
             style={{ background: 'none', cursor: 'pointer', padding: 4, borderRadius: 4, color: AH.GRAY }}
