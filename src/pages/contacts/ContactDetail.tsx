@@ -16,6 +16,23 @@ import { cn } from '@/lib/utils';
 
 type Tab = 'timeline' | 'cases' | 'activities';
 
+type ContactRecord = Contact & {
+  organizations?: Organization | null;
+  job_title?: string | null;
+  organization_id?: string | null;
+  linkedin_url?: string | null;
+};
+
+type ContactFormState = {
+  name?: string;
+  phone?: string | null;
+  email?: string | null;
+  source?: Contact['source'];
+  job_title?: string;
+  organization_id?: string;
+  linkedin_url?: string;
+};
+
 const ContactDetail = () => {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
@@ -23,9 +40,9 @@ const ContactDetail = () => {
   const [tab, setTab] = useState<Tab>('timeline');
   const [editing, setEditing] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<Contact & { job_title?: string; organization_id?: string }>>({});
+  const [editForm, setEditForm] = useState<ContactFormState>({});
 
-  const { data: contact } = useQuery<Contact & { organizations?: Organization | null; job_title?: string }>({
+  const { data: contact } = useQuery<ContactRecord | null>({
     queryKey: ['contact', id],
     queryFn: async () => {
       const { data } = await (supabase as any).from('contacts').select('*').eq('id', id).single();
@@ -39,7 +56,19 @@ const ContactDetail = () => {
     },
   });
 
-  useEffect(() => { if (contact) setEditForm(contact); }, [contact]);
+  useEffect(() => {
+    if (!contact) return;
+
+    setEditForm({
+      name: contact.name,
+      phone: contact.phone,
+      email: contact.email,
+      source: contact.source,
+      job_title: contact.job_title ?? '',
+      organization_id: contact.organization_id ?? '',
+      linkedin_url: contact.linkedin_url ?? '',
+    });
+  }, [contact]);
 
   const { data: orgs = [] } = useQuery<Organization[]>({
     queryKey: ['orgs-select'],
@@ -63,7 +92,24 @@ const ContactDetail = () => {
   }))].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const save = useMutation({
-    mutationFn: async () => { const { error } = await (supabase as any).from('contacts').update(editForm).eq('id', id); if (error) throw error; },
+    mutationFn: async () => {
+      const payload = {
+        name: editForm.name?.trim() || contact.name,
+        phone: editForm.phone || null,
+        email: editForm.email || null,
+        source: editForm.source || null,
+        job_title: (editForm as any).job_title || null,
+        organization_id: (editForm as any).organization_id || null,
+        linkedin_url: (editForm as any).linkedin_url || null,
+      };
+
+      const { error } = await (supabase as any)
+        .from('contacts')
+        .update(payload)
+        .eq('id', id);
+
+      if (error) throw error;
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['contact', id] }); qc.invalidateQueries({ queryKey: ['contacts'] }); setEditing(false); toast.success('Saved'); },
     onError: (e: any) => toast.error(e.message),
   });
