@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { WaChannel, WaConversation } from '@/types';
 import { toast } from 'sonner';
-import { MessageSquare, RefreshCw, Clock, ChevronRight, Upload, Users } from 'lucide-react';
+import { MessageSquare, RefreshCw, Clock, ChevronRight, Upload, Users, SquarePen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import ContactPanel from './ContactPanel';
+import NewConversationModal from './NewConversationModal';
 
 const AH = { RED: '#CD1719', DARK: '#1D1D1B', GRAY: '#B2B2B2', LIGHT: '#EDEDED' };
 
@@ -218,6 +219,17 @@ const WhatsAppInbox = () => {
   }, [conversations, qc]);
 
   // Sync channels
+  // Handle successful new conversation — open it in the inbox
+  const handleNewConvSuccess = async (conversationId: string, channelId: string, chatId: string) => {
+    qc.invalidateQueries({ queryKey: ['wa_conversations'] });
+    // Switch to the right channel tab and select the new conversation
+    setActiveChannel(channelId);
+    // Brief delay so the query refreshes
+    setTimeout(() => {
+      qc.invalidateQueries({ queryKey: ['wa_conversations', channelId] });
+    }, 800);
+  };
+
   // Push CRM contacts TO Wazzup (bidirectional sync)
   const pushContacts = useMutation({
     mutationFn: async () => {
@@ -304,6 +316,21 @@ const WhatsAppInbox = () => {
               width: 14, height: 14,
               animation: sync.isPending ? 'spin 1s linear infinite' : 'none',
             }} />
+          </button>
+
+          {/* New conversation button */}
+          <button
+            onClick={() => setNewConvOpen(true)}
+            title="Start new conversation"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              borderRadius: 6, padding: 4, color: '#CD1719',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = '#fff5f5')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <SquarePen style={{ width: 16, height: 16 }} />
           </button>
         </div>
 
@@ -403,6 +430,14 @@ const WhatsAppInbox = () => {
       )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* New Conversation Modal */}
+      <NewConversationModal
+        open={newConvOpen}
+        onClose={() => setNewConvOpen(false)}
+        channels={channels}
+        onSuccess={handleNewConvSuccess}
+      />
     </div>
   );
 };
