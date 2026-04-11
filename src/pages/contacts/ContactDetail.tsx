@@ -16,6 +16,23 @@ import { cn } from '@/lib/utils';
 
 type Tab = 'timeline' | 'cases' | 'activities';
 
+type ContactRecord = Contact & {
+  organizations?: Organization | null;
+  job_title?: string | null;
+  organization_id?: string | null;
+  linkedin_url?: string | null;
+};
+
+type ContactFormState = {
+  name?: string;
+  phone?: string | null;
+  email?: string | null;
+  source?: Contact['source'];
+  job_title?: string;
+  organization_id?: string;
+  linkedin_url?: string;
+};
+
 const ContactDetail = () => {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
@@ -23,9 +40,9 @@ const ContactDetail = () => {
   const [tab, setTab] = useState<Tab>('timeline');
   const [editing, setEditing] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<Contact & { job_title?: string; organization_id?: string }>>({});
+  const [editForm, setEditForm] = useState<ContactFormState>({});
 
-  const { data: contact } = useQuery<Contact & { organizations?: Organization | null; job_title?: string }>({
+  const { data: contact } = useQuery<ContactRecord | null>({
     queryKey: ['contact', id],
     queryFn: async () => {
       const { data } = await (supabase as any).from('contacts').select('*').eq('id', id).single();
@@ -47,9 +64,9 @@ const ContactDetail = () => {
       phone: contact.phone,
       email: contact.email,
       source: contact.source,
-      job_title: (contact as any).job_title ?? '',
+      job_title: contact.job_title ?? '',
       organization_id: contact.organization_id ?? '',
-      linkedin_url: (contact as any).linkedin_url ?? '',
+      linkedin_url: contact.linkedin_url ?? '',
     });
   }, [contact]);
 
