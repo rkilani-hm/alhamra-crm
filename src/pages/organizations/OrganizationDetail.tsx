@@ -19,7 +19,7 @@ import WaThreadPreview from '@/components/crm/WaThreadPreview';
 import {
   Building2, Phone, Mail, Globe, MapPin, Edit2, Save, X,
   Plus, ChevronLeft, Users, Briefcase, Clock, FileText,
-  LayoutList, CheckCircle2, Circle, FileKey, CalendarRange, Hash, Activity,
+  LayoutList, CheckCircle2, Circle, FileKey, CalendarRange, Hash, Activity as ActivityIcon2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
