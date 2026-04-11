@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Users, Plus, Search, Phone, Mail, Building2, ChevronRight, MessageSquare } from 'lucide-react';
+import { Users, Plus, Search, Phone, Mail, Building2, ChevronRight, MessageSquare, FileSpreadsheet } from 'lucide-react';
+import ImportModal from '@/components/crm/ImportModal';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -124,6 +125,7 @@ const ContactsList = () => {
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [newOpen, setNewOpen] = useState(params.has('new'));
+  const [importOpen, setImportOpen] = useState(false);
 
   const { data: contacts = [], isLoading } = useQuery<ContactWithOrg[]>({
     queryKey: ['contacts'],
@@ -161,9 +163,14 @@ const ContactsList = () => {
           <h1 className="text-3xl font-medium" style={{ fontFamily: 'Cormorant Garamond, serif' }}>Contacts</h1>
           <p className="text-muted-foreground text-sm mt-1">{contacts.length} people · link to organizations for full history</p>
         </div>
-        <Button onClick={() => setNewOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> New contact
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <FileSpreadsheet className="h-4 w-4" /> Import Excel
+          </Button>
+          <Button onClick={() => setNewOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> New contact
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-3">
@@ -242,6 +249,7 @@ const ContactsList = () => {
       </div>
 
       <NewContactModal open={newOpen} onClose={() => setNewOpen(false)} defaultOrgId={params.get('org') ?? undefined} />
+      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} mode="contacts" />
     </div>
   );
 };

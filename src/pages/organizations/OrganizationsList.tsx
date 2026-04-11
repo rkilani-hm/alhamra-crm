@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Building2, Plus, Search, Users, Briefcase, Phone, Globe, ChevronRight } from 'lucide-react';
+import { Building2, Plus, Search, Users, Briefcase, Phone, Globe, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import ImportModal from '@/components/crm/ImportModal';
 import { cn } from '@/lib/utils';
 
 const TYPE_COLORS: Record<OrgType, string> = {
@@ -125,6 +126,7 @@ const OrganizationsList = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [newOpen, setNewOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const { data: orgs = [], isLoading } = useQuery<(Organization & { contact_count: number; case_count: number })[]>({
     queryKey: ['organizations'],
@@ -159,9 +161,14 @@ const OrganizationsList = () => {
           <h1 className="text-3xl font-medium" style={{ fontFamily: 'Cormorant Garamond, serif' }}>Organizations</h1>
           <p className="text-muted-foreground text-sm mt-1">{orgs.length} companies · full history per organization</p>
         </div>
-        <Button onClick={() => setNewOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> New organization
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <FileSpreadsheet className="h-4 w-4" /> Import Excel
+          </Button>
+          <Button onClick={() => setNewOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> New organization
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -260,6 +267,7 @@ const OrganizationsList = () => {
       </div>
 
       <NewOrgModal open={newOpen} onClose={() => setNewOpen(false)} />
+      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} mode="organizations" />
     </div>
   );
 };
