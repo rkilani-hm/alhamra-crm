@@ -160,6 +160,7 @@ const ConvoRow = ({
 const WhatsAppInbox = () => {
   const qc = useQueryClient();
   const [activeConvo, setActiveConvo] = useState<WaConversation | null>(null);
+  const [newConvOpen, setNewConvOpen] = useState(false);
 
   // Load channels
   const { data: channels = [] } = useQuery<WaChannel[]>({
@@ -220,14 +221,8 @@ const WhatsAppInbox = () => {
 
   // Sync channels
   // Handle successful new conversation — open it in the inbox
-  const handleNewConvSuccess = async (conversationId: string, channelId: string, chatId: string) => {
-    qc.invalidateQueries({ queryKey: ['wa_conversations'] });
-    // Switch to the right channel tab and select the new conversation
-    setActiveChannel(channelId);
-    // Brief delay so the query refreshes
-    setTimeout(() => {
-      qc.invalidateQueries({ queryKey: ['wa_conversations', channelId] });
-    }, 800);
+  const handleNewConvSuccess = async (conversationId: string, _channelId: string, _chatId: string) => {
+    qc.invalidateQueries({ queryKey: ['wa_conversations_inbox'] });
   };
 
   // Push CRM contacts TO Wazzup (bidirectional sync)
