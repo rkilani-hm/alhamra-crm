@@ -160,6 +160,7 @@ const ConvoRow = ({
 const WhatsAppInbox = () => {
   const qc = useQueryClient();
   const [activeConvo, setActiveConvo] = useState<WaConversation | null>(null);
+  const [newConvOpen, setNewConvOpen] = useState(false);
 
   // Load channels
   const { data: channels = [] } = useQuery<WaChannel[]>({
