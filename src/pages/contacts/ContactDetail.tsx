@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ActivityIcon } from '@/components/crm/ActivityIcon';
 import LogActivityModal from '@/components/crm/LogActivityModal';
+import WaThreadPreview from '@/components/crm/WaThreadPreview';
 import { Phone, Mail, Building2, ChevronLeft, Plus, Edit2, Save, X, Briefcase, LayoutList, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -232,6 +233,9 @@ const ContactDetail = () => {
                             )}
                           </div>
                           {a.body && <p className="text-xs text-muted-foreground">{a.body}</p>}
+                          {waConvId && (
+                            <WaThreadPreview conversationId={waConvId} />
+                          )}
                           <p className="text-[10px] text-muted-foreground mt-1">
                             {(a as any).profiles?.full_name
                               ? `${(a as any).profiles.full_name} · `
@@ -286,6 +290,9 @@ const ContactDetail = () => {
                         )}
                       </div>
                       {a.body && <p className="text-xs text-muted-foreground">{a.body}</p>}
+                      {waConvId && (
+                        <WaThreadPreview conversationId={waConvId} />
+                      )}
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {isWa ? 'WhatsApp' : a.profiles?.full_name} · {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
                       </p>

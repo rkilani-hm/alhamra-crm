@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ActivityIcon, ACTIVITY_CONFIG } from '@/components/crm/ActivityIcon';
 import LogActivityModal from '@/components/crm/LogActivityModal';
+import WaThreadPreview from '@/components/crm/WaThreadPreview';
 import {
   Building2, Phone, Mail, Globe, MapPin, Edit2, Save, X,
   Plus, ChevronLeft, Users, Briefcase, Clock, FileText,
@@ -68,6 +69,13 @@ const TimelineItem = ({ activity }: { activity: Activity }) => {
               <div className="mt-1 rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
                 Outcome: {displayOutcome}
               </div>
+            )}
+            {/* Inline WhatsApp thread */}
+            {waConvId && (
+              <WaThreadPreview
+                conversationId={waConvId}
+                contactName={activity.contacts?.name}
+              />
             )}
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               {activity.contacts && (
@@ -439,6 +447,12 @@ const OrganizationDetail = () => {
                           </div>
                           {a.body && <p className="text-xs text-muted-foreground mt-0.5">{a.body}</p>}
                           {displayOutcome && <p className="text-xs text-green-700 mt-1">→ {displayOutcome}</p>}
+                          {waConvId && (
+                            <WaThreadPreview
+                              conversationId={waConvId}
+                              contactName={(a.contacts as any)?.name}
+                            />
+                          )}
                         </div>
                         <div className="text-right text-xs text-muted-foreground ml-4 shrink-0">
                           <p>{formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}</p>
