@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ActivityIcon } from '@/components/crm/ActivityIcon';
 import LogActivityModal from '@/components/crm/LogActivityModal';
+import ImageUploader from '@/components/crm/ImageUploader';
 import WaThreadPreview from '@/components/crm/WaThreadPreview';
 import WazzupChatPanel from '@/components/crm/WazzupChatPanel';
 import { Phone, Mail, Building2, ChevronLeft, Plus, Edit2, Save, X, Briefcase, LayoutList, MessageSquare, CheckCircle2 } from 'lucide-react';
@@ -128,7 +129,24 @@ const ContactDetail = () => {
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
           <button onClick={() => nav('/contacts')} className="text-muted-foreground hover:text-foreground"><ChevronLeft className="h-5 w-5" /></button>
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold text-lg">{contact.name.slice(0,2).toUpperCase()}</div>
+          <ImageUploader
+            bucket="contact-avatars"
+            entityId={contact.id}
+            currentUrl={(contact as any).avatar_url}
+            initials={contact.name.slice(0,2)}
+            size="md"
+            shape="circle"
+            editable={editing}
+            onUpload={async (url) => {
+              await (supabase as any).from('contacts').update({ avatar_url: url }).eq('id', contact.id);
+              qc.invalidateQueries({ queryKey: ['contact', id] });
+              qc.invalidateQueries({ queryKey: ['contacts'] });
+            }}
+            onRemove={async () => {
+              await (supabase as any).from('contacts').update({ avatar_url: null }).eq('id', contact.id);
+              qc.invalidateQueries({ queryKey: ['contact', id] });
+            }}
+          />
           <div>
             {editing ? <Input value={(editForm as any).name ?? ''} onChange={ef('name')} className="h-8 text-xl font-semibold w-64" />
               : <h1 className="text-2xl font-medium" style={{ fontFamily: 'Cormorant Garamond, serif' }}>{contact.name}</h1>}

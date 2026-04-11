@@ -233,8 +233,10 @@ const OrganizationsList = () => {
                   onClick={() => nav(`/organizations/${org.id}`)}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-semibold text-sm">
-                        {org.name.slice(0,2).toUpperCase()}
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-semibold text-sm overflow-hidden">
+                        {(org as any).logo_url
+                          ? <img src={(org as any).logo_url} alt={org.name} className="h-full w-full object-cover" />
+                          : org.name.slice(0,2).toUpperCase()}
                       </div>
                       <div>
                         <p className="font-medium">{org.name}</p>

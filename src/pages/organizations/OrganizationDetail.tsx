@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Organization, Contact, Activity, Case } from '@/types';
+import { Organization, Contact, Activity, Case, OrganizationExtended } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,11 +14,12 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { ActivityIcon, ACTIVITY_CONFIG } from '@/components/crm/ActivityIcon';
 import LogActivityModal from '@/components/crm/LogActivityModal';
 import WazzupChatPanel from '@/components/crm/WazzupChatPanel';
+import ImageUploader from '@/components/crm/ImageUploader';
 import WaThreadPreview from '@/components/crm/WaThreadPreview';
 import {
   Building2, Phone, Mail, Globe, MapPin, Edit2, Save, X,
   Plus, ChevronLeft, Users, Briefcase, Clock, FileText,
-  LayoutList, CheckCircle2, Circle,
+  LayoutList, CheckCircle2, Circle, FileKey, CalendarRange, Hash, Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -191,7 +192,7 @@ const OrganizationDetail = () => {
         .update({ ...editForm, updated_at: new Date().toISOString() }).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['org', id] }); setEditing(false); toast.success('Saved'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['org', id] }); qc.invalidateQueries({ queryKey: ['organizations'] }); setEditing(false); toast.success('Saved'); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -218,9 +219,23 @@ const OrganizationDetail = () => {
           <button onClick={() => nav('/organizations')} className="text-muted-foreground hover:text-foreground transition-colors">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-lg">
-            {org.name.slice(0,2).toUpperCase()}
-          </div>
+          <ImageUploader
+            bucket="org-logos"
+            entityId={org.id}
+            currentUrl={(org as any).logo_url}
+            initials={org.name.slice(0,2)}
+            size="md"
+            shape="square"
+            editable={editing}
+            onUpload={async (url) => {
+              await (supabase as any).from('organizations').update({ logo_url: url }).eq('id', org.id);
+              qc.invalidateQueries({ queryKey: ['org', id] });
+            }}
+            onRemove={async () => {
+              await (supabase as any).from('organizations').update({ logo_url: null }).eq('id', org.id);
+              qc.invalidateQueries({ queryKey: ['org', id] });
+            }}
+          />
           <div>
             {editing ? (
               <Input value={editForm.name ?? ''} onChange={ef('name')} className="h-8 text-xl font-semibold w-72" />
@@ -310,10 +325,128 @@ const OrganizationDetail = () => {
           <div className="rounded-xl border bg-card p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">About</p>
             {editing ? (
-              <Textarea value={editForm.description ?? ''} onChange={ef('description')}
-                rows={4} className="text-xs resize-none" placeholder="Notes about this organization…" />
+              <>
+                <div className="mb-2">
+                  <Label className="text-[10px]">Arabic Name</Label>
+                  <Input
+                    value={(editForm as any).name_arabic ?? ''}
+                    onChange={e => setEditForm((p: any) => ({ ...p, name_arabic: e.target.value }))}
+                    className="h-7 text-xs mt-0.5 text-right" dir="rtl"
+                    placeholder="الاسم بالعربي"
+                  />
+                </div>
+                <Textarea value={editForm.description ?? ''} onChange={ef('description')}
+                  rows={3} className="text-xs resize-none" placeholder="Notes about this organization…" />
+              </>
             ) : (
-              <p className="text-xs text-muted-foreground">{org.description ?? 'No description yet'}</p>
+              <>
+                {(org as any).name_arabic && (
+                  <p className="text-sm text-foreground text-right mb-2 font-medium" dir="rtl">
+                    {(org as any).name_arabic}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">{org.description ?? 'No description yet'}</p>
+              </>
+            )}
+          </div>
+
+          {/* SAP Leasing Data */}
+          <div className="rounded-xl border bg-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FileKey className="h-3.5 w-3.5 text-primary" />
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">SAP Leasing Data</p>
+            </div>
+            {editing ? (
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-[10px]">Contract Number</Label>
+                  <Input value={(editForm as any).lease_contract_number ?? ''}
+                    onChange={e => setEditForm((p: any) => ({ ...p, lease_contract_number: e.target.value }))}
+                    className="h-7 text-xs mt-0.5 font-mono" placeholder="e.g. LC-2024-00145" />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Rental Object Code</Label>
+                  <Input value={(editForm as any).lease_rental_object ?? ''}
+                    onChange={e => setEditForm((p: any) => ({ ...p, lease_rental_object: e.target.value }))}
+                    className="h-7 text-xs mt-0.5 font-mono" placeholder="e.g. RO-T12-F05" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[10px]">Start Date</Label>
+                    <Input type="date" value={(editForm as any).lease_start_date ?? ''}
+                      onChange={e => setEditForm((p: any) => ({ ...p, lease_start_date: e.target.value }))}
+                      className="h-7 text-xs mt-0.5" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">End Date</Label>
+                    <Input type="date" value={(editForm as any).lease_end_date ?? ''}
+                      onChange={e => setEditForm((p: any) => ({ ...p, lease_end_date: e.target.value }))}
+                      className="h-7 text-xs mt-0.5" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-[10px]">Lease Status</Label>
+                  <select
+                    value={(editForm as any).lease_status ?? ''}
+                    onChange={e => setEditForm((p: any) => ({ ...p, lease_status: e.target.value || null }))}
+                    className="w-full h-7 text-xs mt-0.5 rounded-md border border-input bg-background px-2"
+                  >
+                    <option value="">— not set —</option>
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="expired">Expired</option>
+                    <option value="terminated">Terminated</option>
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 text-xs">
+                {/* Status badge */}
+                {(org as any).lease_status && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize', {
+                      active:     'bg-green-100 text-green-700',
+                      pending:    'bg-amber-100 text-amber-700',
+                      expired:    'bg-red-100 text-red-700',
+                      terminated: 'bg-slate-100 text-slate-600',
+                    }[(org as any).lease_status as string] ?? 'bg-muted text-muted-foreground')}>
+                      {(org as any).lease_status}
+                    </span>
+                  </div>
+                )}
+                {(org as any).lease_contract_number ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="font-mono font-medium">{(org as any).lease_contract_number}</span>
+                    </div>
+                    {(org as any).lease_rental_object && (
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="font-mono">{(org as any).lease_rental_object}</span>
+                      </div>
+                    )}
+                    {((org as any).lease_start_date || (org as any).lease_end_date) && (
+                      <div className="flex items-center gap-2">
+                        <CalendarRange className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span>
+                          {(org as any).lease_start_date
+                            ? format(new Date((org as any).lease_start_date), 'd MMM yyyy')
+                            : '—'}
+                          {' → '}
+                          {(org as any).lease_end_date
+                            ? format(new Date((org as any).lease_end_date), 'd MMM yyyy')
+                            : '—'}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-muted-foreground italic">
+                    No lease data yet · click Edit to add
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>

@@ -185,3 +185,21 @@ export interface Activity {
   assigned?:       { id: string; full_name: string | null } | null;
   departments?:    { id: string; name: string } | null;
 }
+
+// ── Extended Organization with new fields ────────────────────
+// (extends the base Organization interface above)
+export interface OrganizationExtended extends Organization {
+  name_arabic:          string | null;
+  logo_url:             string | null;
+  // SAP Leasing Data
+  lease_contract_number: string | null;
+  lease_rental_object:  string | null;
+  lease_start_date:     string | null;  // ISO date
+  lease_end_date:       string | null;  // ISO date
+  lease_status:         'active' | 'expired' | 'pending' | 'terminated' | null;
+}
+
+// ── Extended Contact with avatar ─────────────────────────────
+export interface ContactExtended extends Contact {
+  avatar_url: string | null;
+}

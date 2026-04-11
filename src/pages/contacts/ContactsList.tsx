@@ -216,8 +216,10 @@ const ContactsList = () => {
                 <tr key={c.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => nav(`/contacts/${c.id}`)}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold text-xs">
-                        {c.name.slice(0,2).toUpperCase()}
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold text-xs overflow-hidden">
+                        {(c as any).avatar_url
+                          ? <img src={(c as any).avatar_url} alt={c.name} className="h-full w-full object-cover" />
+                          : c.name.slice(0,2).toUpperCase()}
                       </div>
                       <div>
                         <p className="font-medium">{c.name}</p>
