@@ -9,7 +9,7 @@ import { ActivityIcon, ACTIVITY_CONFIG } from '@/components/crm/ActivityIcon';
 import LogActivityModal from '@/components/crm/LogActivityModal';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format, isToday, isTomorrow, isPast } from 'date-fns';
-import { Plus, Search, CheckCircle2, Circle, Calendar, Clock, Building2 } from 'lucide-react';
+import { Plus, Search, CheckCircle2, Circle, Calendar, Clock, Building2, LayoutList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TYPES: ('all' | ActivityType)[] = ['all','call','meeting','whatsapp','email','visit','task','note'];
@@ -192,8 +192,5 @@ const ActivitiesPage = () => {
     </div>
   );
 };
-
-// Fix missing import
-import { LayoutList } from 'lucide-react';
 
 export default ActivitiesPage;
