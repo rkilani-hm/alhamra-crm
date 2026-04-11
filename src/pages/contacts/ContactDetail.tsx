@@ -39,7 +39,19 @@ const ContactDetail = () => {
     },
   });
 
-  useEffect(() => { if (contact) setEditForm(contact); }, [contact]);
+  useEffect(() => {
+    if (!contact) return;
+
+    setEditForm({
+      name: contact.name,
+      phone: contact.phone,
+      email: contact.email,
+      source: contact.source,
+      job_title: (contact as any).job_title ?? '',
+      organization_id: contact.organization_id ?? '',
+      linkedin_url: (contact as any).linkedin_url ?? '',
+    });
+  }, [contact]);
 
   const { data: orgs = [] } = useQuery<Organization[]>({
     queryKey: ['orgs-select'],
@@ -63,7 +75,24 @@ const ContactDetail = () => {
   }))].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const save = useMutation({
-    mutationFn: async () => { const { error } = await (supabase as any).from('contacts').update(editForm).eq('id', id); if (error) throw error; },
+    mutationFn: async () => {
+      const payload = {
+        name: editForm.name?.trim() || contact.name,
+        phone: editForm.phone || null,
+        email: editForm.email || null,
+        source: editForm.source || null,
+        job_title: (editForm as any).job_title || null,
+        organization_id: (editForm as any).organization_id || null,
+        linkedin_url: (editForm as any).linkedin_url || null,
+      };
+
+      const { error } = await (supabase as any)
+        .from('contacts')
+        .update(payload)
+        .eq('id', id);
+
+      if (error) throw error;
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['contact', id] }); qc.invalidateQueries({ queryKey: ['contacts'] }); setEditing(false); toast.success('Saved'); },
     onError: (e: any) => toast.error(e.message),
   });
