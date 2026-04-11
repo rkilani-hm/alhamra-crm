@@ -25,6 +25,7 @@ type Tab = typeof TABS[number];
 
 // ── Timeline item ─────────────────────────────────────────────
 const TimelineItem = ({ activity }: { activity: Activity }) => {
+  const nav = useNavigate();
   const qc = useQueryClient();
   const [, setDone] = useState(activity.done);
 
@@ -33,6 +34,14 @@ const TimelineItem = ({ activity }: { activity: Activity }) => {
       .eq('id', activity.id);
     qc.invalidateQueries({ queryKey: ['org-activities'] });
   };
+
+  // WhatsApp activities store the conversation reference as "wa:<conv_id>"
+  const isWhatsApp = activity.type === 'whatsapp';
+  const waConvId   = isWhatsApp && activity.outcome?.startsWith('wa:')
+    ? activity.outcome.slice(3) : null;
+
+  // For non-whatsapp activities, show outcome as normal text
+  const displayOutcome = !isWhatsApp && activity.outcome ? activity.outcome : null;
 
   return (
     <div className="flex gap-3">
@@ -43,11 +52,21 @@ const TimelineItem = ({ activity }: { activity: Activity }) => {
       <div className="pb-5 flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="font-medium text-sm">{activity.subject}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-sm">{activity.subject}</p>
+              {waConvId && (
+                <button
+                  onClick={() => nav('/whatsapp')}
+                  className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full hover:bg-green-100 transition-colors font-medium"
+                >
+                  View conversation →
+                </button>
+              )}
+            </div>
             {activity.body && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{activity.body}</p>}
-            {activity.outcome && (
+            {displayOutcome && (
               <div className="mt-1 rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
-                Outcome: {activity.outcome}
+                Outcome: {displayOutcome}
               </div>
             )}
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -399,25 +418,38 @@ const OrganizationDetail = () => {
                   <Plus className="h-3.5 w-3.5 mr-1.5" /> Log activity
                 </Button>
               </div>
-              {activities.map(a => (
-                <div key={a.id} className="flex gap-3 rounded-lg border bg-card p-3">
-                  <ActivityIcon type={a.type} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium text-sm">{a.subject}</p>
-                        {a.body && <p className="text-xs text-muted-foreground mt-0.5">{a.body}</p>}
-                        {a.outcome && <p className="text-xs text-green-700 mt-1">→ {a.outcome}</p>}
-                      </div>
-                      <div className="text-right text-xs text-muted-foreground ml-4 shrink-0">
-                        <p>{formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}</p>
-                        <p>{a.profiles?.full_name}</p>
-                        {a.done && <span className="text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Done</span>}
+              {activities.map(a => {
+                const isWa = a.type === 'whatsapp';
+                const waConvId = isWa && a.outcome?.startsWith('wa:') ? a.outcome.slice(3) : null;
+                const displayOutcome = !isWa && a.outcome ? a.outcome : null;
+                return (
+                  <div key={a.id} className="flex gap-3 rounded-lg border bg-card p-3">
+                    <ActivityIcon type={a.type} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{a.subject}</p>
+                            {waConvId && (
+                              <button onClick={() => nav('/whatsapp')}
+                                className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full hover:bg-green-100 transition-colors font-medium shrink-0">
+                                View conversation →
+                              </button>
+                            )}
+                          </div>
+                          {a.body && <p className="text-xs text-muted-foreground mt-0.5">{a.body}</p>}
+                          {displayOutcome && <p className="text-xs text-green-700 mt-1">→ {displayOutcome}</p>}
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground ml-4 shrink-0">
+                          <p>{formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}</p>
+                          <p>{isWa ? 'WhatsApp' : a.profiles?.full_name}</p>
+                          {a.done && <span className="text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Done</span>}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {activities.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground">No activities yet</div>}
             </div>
           )}

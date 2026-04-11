@@ -209,21 +209,40 @@ const ContactDetail = () => {
             <div className="space-y-0">
               {timeline.length === 0
                 ? <div className="py-12 text-center text-sm text-muted-foreground">No activity yet</div>
-                : timeline.map(a => (
-                  <div key={a.id} className="flex gap-3 mb-4">
-                    <div className="flex flex-col items-center">
-                      <ActivityIcon type={a.type as any} size="sm" />
-                      <div className="mt-1 w-px flex-1 bg-border" />
-                    </div>
-                    <div className="pb-4 flex-1">
-                      <p className="font-medium text-sm">{a.subject}</p>
-                      {a.body && <p className="text-xs text-muted-foreground">{a.body}</p>}
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {(a as any).profiles?.full_name} · {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                : timeline.map(a => {
+                    const isWa = (a as any).type === 'whatsapp';
+                    const waConvId = isWa && (a as any).outcome?.startsWith('wa:')
+                      ? (a as any).outcome.slice(3) : null;
+                    return (
+                      <div key={a.id} className="flex gap-3 mb-4">
+                        <div className="flex flex-col items-center">
+                          <ActivityIcon type={a.type as any} size="sm" />
+                          <div className="mt-1 w-px flex-1 bg-border" />
+                        </div>
+                        <div className="pb-4 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{a.subject}</p>
+                            {waConvId && (
+                              <button
+                                onClick={() => nav('/whatsapp')}
+                                className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full hover:bg-green-100 transition-colors font-medium"
+                              >
+                                View →
+                              </button>
+                            )}
+                          </div>
+                          {a.body && <p className="text-xs text-muted-foreground">{a.body}</p>}
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {(a as any).profiles?.full_name
+                              ? `${(a as any).profiles.full_name} · `
+                              : isWa ? 'WhatsApp · ' : ''}
+                            {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+              }
             </div>
           )}
 
@@ -250,16 +269,30 @@ const ContactDetail = () => {
               <div className="flex justify-end mb-2">
                 <Button size="sm" variant="outline" onClick={() => setLogOpen(true)}><Plus className="h-3.5 w-3.5 mr-1.5" />Log activity</Button>
               </div>
-              {activities.map(a => (
-                <div key={a.id} className="flex gap-3 rounded-lg border bg-card p-3">
-                  <ActivityIcon type={a.type} size="sm" />
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{a.subject}</p>
-                    {a.body && <p className="text-xs text-muted-foreground">{a.body}</p>}
-                    <p className="text-[10px] text-muted-foreground mt-1">{a.profiles?.full_name} · {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}</p>
+              {activities.map(a => {
+                const isWa = a.type === 'whatsapp';
+                const waConvId = isWa && a.outcome?.startsWith('wa:') ? a.outcome.slice(3) : null;
+                return (
+                  <div key={a.id} className="flex gap-3 rounded-lg border bg-card p-3">
+                    <ActivityIcon type={a.type} size="sm" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{a.subject}</p>
+                        {waConvId && (
+                          <button onClick={() => nav('/whatsapp')}
+                            className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full hover:bg-green-100 transition-colors font-medium">
+                            View →
+                          </button>
+                        )}
+                      </div>
+                      {a.body && <p className="text-xs text-muted-foreground">{a.body}</p>}
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {isWa ? 'WhatsApp' : a.profiles?.full_name} · {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {activities.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground">No activities yet</div>}
             </div>
           )}
