@@ -197,6 +197,7 @@ export type Database = {
           priority: string | null
           status: string | null
           subject: string
+          wazzup_deal_id: string | null
         }
         Insert: {
           channel?: string | null
@@ -211,6 +212,7 @@ export type Database = {
           priority?: string | null
           status?: string | null
           subject: string
+          wazzup_deal_id?: string | null
         }
         Update: {
           channel?: string | null
@@ -225,6 +227,7 @@ export type Database = {
           priority?: string | null
           status?: string | null
           subject?: string
+          wazzup_deal_id?: string | null
         }
         Relationships: [
           {
@@ -261,6 +264,7 @@ export type Database = {
           organization_id: string | null
           phone: string | null
           source: string | null
+          wazzup_synced_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -272,6 +276,7 @@ export type Database = {
           organization_id?: string | null
           phone?: string | null
           source?: string | null
+          wazzup_synced_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -283,6 +288,7 @@ export type Database = {
           organization_id?: string | null
           phone?: string | null
           source?: string | null
+          wazzup_synced_at?: string | null
         }
         Relationships: [
           {
@@ -458,6 +464,7 @@ export type Database = {
           last_message: string | null
           last_message_at: string | null
           unread_count: number | null
+          wazzup_deal_id: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -470,6 +477,7 @@ export type Database = {
           last_message?: string | null
           last_message_at?: string | null
           unread_count?: number | null
+          wazzup_deal_id?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -482,6 +490,7 @@ export type Database = {
           last_message?: string | null
           last_message_at?: string | null
           unread_count?: number | null
+          wazzup_deal_id?: string | null
         }
         Relationships: [
           {
