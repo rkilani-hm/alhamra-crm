@@ -255,6 +255,7 @@ export type Database = {
       }
       contacts: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -267,6 +268,7 @@ export type Database = {
           wazzup_synced_at: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -279,6 +281,7 @@ export type Database = {
           wazzup_synced_at?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -329,6 +332,12 @@ export type Database = {
           email: string | null
           id: string
           industry: string | null
+          lease_contract_number: string | null
+          lease_end_date: string | null
+          lease_rental_object: string | null
+          lease_start_date: string | null
+          lease_status: string | null
+          logo_url: string | null
           name: string
           name_arabic: string | null
           owner_id: string | null
@@ -348,6 +357,12 @@ export type Database = {
           email?: string | null
           id?: string
           industry?: string | null
+          lease_contract_number?: string | null
+          lease_end_date?: string | null
+          lease_rental_object?: string | null
+          lease_start_date?: string | null
+          lease_status?: string | null
+          logo_url?: string | null
           name: string
           name_arabic?: string | null
           owner_id?: string | null
@@ -367,6 +382,12 @@ export type Database = {
           email?: string | null
           id?: string
           industry?: string | null
+          lease_contract_number?: string | null
+          lease_end_date?: string | null
+          lease_rental_object?: string | null
+          lease_start_date?: string | null
+          lease_status?: string | null
+          logo_url?: string | null
           name?: string
           name_arabic?: string | null
           owner_id?: string | null
