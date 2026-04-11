@@ -422,7 +422,7 @@ const OrganizationDetail = () => {
                     </div>
                     {(org as any).lease_rental_object && (
                       <div className="flex items-center gap-2">
-                        <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <ActivityIcon2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <span className="font-mono">{(org as any).lease_rental_object}</span>
                       </div>
                     )}
