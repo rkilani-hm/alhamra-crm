@@ -1,9 +1,7 @@
 // Edge Function: wazzup-send
 // Sends a WhatsApp message via Wazzup24 API.
-// Works for BOTH existing conversations and NEW conversations (first message).
+// Supports text, image, document, audio, and video messages.
 // When conversationId is omitted, creates a new wa_conversation automatically.
-//
-// Deploy: supabase functions deploy wazzup-send
 
 import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -18,10 +16,11 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { channelId, chatId, text, conversationId } = body;
+    const { channelId, chatId, text, conversationId, contentUri, msgType } = body;
 
-    if (!channelId || !chatId || !text) {
-      return new Response(JSON.stringify({ error: 'channelId, chatId and text are required' }), {
+    // text OR contentUri must be provided
+    if (!channelId || !chatId || (!text && !contentUri)) {
+      return new Response(JSON.stringify({ error: 'channelId, chatId and (text or contentUri) are required' }), {
         status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
       });
     }
@@ -36,7 +35,6 @@ serve(async (req) => {
     let convId: string = conversationId;
 
     if (!convId) {
-      // Upsert conversation by channelId + chatId
       const { data: conv, error: convErr } = await supabase
         .from('wa_conversations')
         .upsert(
@@ -50,20 +48,30 @@ serve(async (req) => {
       convId = conv.id;
     }
 
-    // ── 2. Send via Wazzup24 ──────────────────────────────────
+    // ── 2. Build Wazzup24 payload ─────────────────────────────
+    const wazzupPayload: Record<string, unknown> = {
+      channelId,
+      chatType:     'whatsapp',
+      chatId,
+      crmMessageId: crypto.randomUUID(),
+    };
+
+    if (contentUri) {
+      // Media message — Wazzup uses contentUri for images/documents/etc.
+      wazzupPayload.contentUri = contentUri;
+      if (text) wazzupPayload.text = text; // caption
+    } else {
+      wazzupPayload.text = text;
+    }
+
+    // ── 3. Send via Wazzup24 ──────────────────────────────────
     const wazzupRes = await fetch('https://api.wazzup24.com/v3/message', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type':  'application/json',
       },
-      body: JSON.stringify({
-        channelId,
-        chatType:     'whatsapp',
-        chatId,
-        text,
-        crmMessageId: crypto.randomUUID(),
-      }),
+      body: JSON.stringify(wazzupPayload),
     });
 
     const wazzupData = await wazzupRes.json().catch(() => ({}));
@@ -72,23 +80,27 @@ serve(async (req) => {
       throw new Error(`Wazzup24 error ${wazzupRes.status}: ${JSON.stringify(wazzupData)}`);
     }
 
-    // ── 3. Store outbound message locally ─────────────────────
+    // ── 4. Store outbound message locally ─────────────────────
     const sentAt = new Date().toISOString();
+    const effectiveMsgType = msgType ?? (contentUri ? 'image' : 'text');
+    const displayBody = text || (contentUri ? `[${effectiveMsgType}]` : '');
+
     const { data: msg, error: msgErr } = await supabase.from('wa_messages').insert({
       wazzup_id:       wazzupData.messageId ?? crypto.randomUUID(),
       conversation_id: convId,
       direction:       'outbound',
-      msg_type:        'text',
-      body:            text,
+      msg_type:        effectiveMsgType,
+      body:            displayBody,
+      media_url:       contentUri ?? null,
       status:          'sent',
       sent_at:         sentAt,
     }).select().single();
 
     if (msgErr) throw msgErr;
 
-    // ── 4. Update conversation last_message ───────────────────
+    // ── 5. Update conversation last_message ───────────────────
     await supabase.from('wa_conversations').update({
-      last_message:    text,
+      last_message:    displayBody.slice(0, 200),
       last_message_at: sentAt,
     }).eq('id', convId);
 
