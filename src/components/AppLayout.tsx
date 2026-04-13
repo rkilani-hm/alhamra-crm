@@ -65,7 +65,8 @@ const SECTIONS: { section: string; roles: NavRole[]; items: NavItem[] }[] = [
     section: 'Insights',
     roles:   ['manager'],
     items:   [
-      { to: '/reports', label: 'Reports', icon: BarChart2, roles: ['manager'] },
+      { to: '/reports',   label: 'Reports',  icon: BarChart2, roles: ['manager']                        },
+      { to: '/admin/kpi', label: 'My KPIs',   icon: Target,    roles: ['frontdesk','department','manager']  },
     ],
   },
   {
@@ -76,6 +77,8 @@ const SECTIONS: { section: string; roles: NavRole[]; items: NavItem[] }[] = [
       { to: '/admin/users',       label: 'Users',       icon: Users,           roles: ['manager']           },
       { to: '/admin/departments', label: 'Departments', icon: Building2,       roles: ['manager']           },
       { to: '/admin/categories',  label: 'Categories',  icon: Tag,             roles: ['manager']           },
+      { to: '/admin/permissions', label: 'Authorities',  icon: Shield,          roles: ['manager']           },
+      { to: '/admin/kpi',         label: 'KPI Targets',  icon: Target,          roles: ['manager']           },
     ],
   },
 ];

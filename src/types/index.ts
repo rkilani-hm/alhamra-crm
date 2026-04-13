@@ -203,3 +203,62 @@ export interface OrganizationExtended extends Organization {
 export interface ContactExtended extends Contact {
   avatar_url: string | null;
 }
+
+// ── Permissions system ────────────────────────────────────────
+
+export type PermissionKey =
+  | 'can_create_cases' | 'can_edit_cases' | 'can_delete_cases'
+  | 'can_view_all_cases' | 'can_reassign_cases'
+  | 'can_create_contacts' | 'can_edit_contacts' | 'can_delete_contacts'
+  | 'can_import_data' | 'can_export_data'
+  | 'can_use_whatsapp' | 'can_start_conversations'
+  | 'can_view_reports' | 'can_view_team_kpi'
+  | 'can_manage_users' | 'can_manage_departments'
+  | 'can_manage_categories' | 'can_manage_permissions';
+
+export type PermissionCategory = 'workspace' | 'crm' | 'channels' | 'insights' | 'admin';
+
+export interface Permission {
+  key:         PermissionKey;
+  label:       string;
+  description: string | null;
+  category:    PermissionCategory;
+}
+
+export interface UserPermission {
+  id:         string;
+  user_id:    string;
+  permission: PermissionKey;
+  granted:    boolean;
+  updated_at: string;
+}
+
+export interface DeptPermission {
+  id:            string;
+  department_id: string;
+  permission:    PermissionKey;
+  granted:       boolean;
+  updated_at:    string;
+}
+
+// ── KPI targets ───────────────────────────────────────────────
+
+export interface KpiTarget {
+  id:                      string;
+  user_id:                 string | null;
+  department_id:           string | null;
+  period_type:             'daily' | 'weekly' | 'monthly' | 'quarterly';
+  period_start:            string;
+  period_end:              string;
+  target_cases_created:    number | null;
+  target_cases_resolved:   number | null;
+  target_response_hours:   number | null;
+  target_resolution_hours: number | null;
+  target_activities:       number | null;
+  target_whatsapp_replies: number | null;
+  created_by:              string | null;
+  created_at:              string;
+  // joins
+  profiles?:               { id: string; full_name: string | null } | null;
+  departments?:            { id: string; name: string } | null;
+}

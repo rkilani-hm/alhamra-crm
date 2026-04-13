@@ -17,6 +17,8 @@ import AdminOverview      from '@/pages/admin/AdminOverview';
 import AdminUsers         from '@/pages/admin/AdminUsers';
 import AdminDepartments   from '@/pages/admin/AdminDepartments';
 import AdminCategories    from '@/pages/admin/AdminCategories';
+import AdminPermissions  from '@/pages/admin/AdminPermissions';
+import AdminKPI          from '@/pages/admin/AdminKPI';
 import NotFound           from '@/pages/NotFound';
 // CRM
 import ContactsList       from '@/pages/contacts/ContactsList';
@@ -66,6 +68,8 @@ const App = () => (
               <Route path="/admin/users"         element={<ProtectedRoute allowedRoles={['manager']}><AdminUsers /></ProtectedRoute>} />
               <Route path="/admin/departments"   element={<ProtectedRoute allowedRoles={['manager']}><AdminDepartments /></ProtectedRoute>} />
               <Route path="/admin/categories"    element={<ProtectedRoute allowedRoles={['manager']}><AdminCategories /></ProtectedRoute>} />
+              <Route path="/admin/permissions"   element={<ProtectedRoute allowedRoles={['manager']}><AdminPermissions /></ProtectedRoute>} />
+              <Route path="/admin/kpi"           element={<ProtectedRoute allowedRoles={['manager','frontdesk','department']}><AdminKPI /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
