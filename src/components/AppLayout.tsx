@@ -34,7 +34,7 @@ interface NavItem {
   icon:   React.ElementType;
   roles:  NavRole[];
   end?:   boolean;
-  badge?: 'urgent';
+  badge?: 'urgent' | 'wa';
 }
 
 const SECTIONS: { section: string; roles: NavRole[]; items: NavItem[] }[] = [
@@ -61,7 +61,7 @@ const SECTIONS: { section: string; roles: NavRole[]; items: NavItem[] }[] = [
     section: 'Channels',
     roles:   ['frontdesk', 'manager'],
     items:   [
-      { to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, roles: ['frontdesk','manager'] },
+      { to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, roles: ['frontdesk','manager'], badge: 'wa' },
     ],
   },
   {
@@ -104,6 +104,23 @@ const useUrgentCount = (role: string) => {
   return count;
 };
 
+/* ─── Live WA unread count ────────────────────────────────── */
+const useWaUnreadCount = (role: string) => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!['frontdesk', 'manager'].includes(role)) return;
+    const load = async () => {
+      const { data } = await (supabase as any)
+        .from('wa_conversations').select('unread_count').gt('unread_count', 0);
+      setCount((data ?? []).reduce((s: number, r: any) => s + (r.unread_count ?? 0), 0));
+    };
+    load();
+    const t = setInterval(load, 30_000);
+    return () => clearInterval(t);
+  }, [role]);
+  return count;
+};
+
 /* ─── AppLayout ───────────────────────────────────────────── */
 export default function AppLayout() {
   const { profile, signOut } = useAuth();
@@ -113,6 +130,7 @@ export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const role       = profile?.role ?? '';
   const urgent     = useUrgentCount(role);
+  const waUnread   = useWaUnreadCount(role);
   const initials   = (profile?.full_name ?? 'U')
     .split(' ').map((w: string) => w[0] ?? '').join('').toUpperCase().slice(0, 2);
 
@@ -122,7 +140,7 @@ export default function AppLayout() {
   /* ── Single nav link ────────────────────────────────────── */
   const NavItem = ({ to, label, icon: Icon, end, badge }: NavItem) => {
     const active     = isActive(to, end);
-    const badgeCount = badge === 'urgent' ? urgent : 0;
+    const badgeCount = badge === 'urgent' ? urgent : badge === 'wa' ? waUnread : 0;
 
     const link = (
       <NavLink
