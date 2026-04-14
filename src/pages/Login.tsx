@@ -25,7 +25,22 @@ type FormData = z.infer<typeof schema>;
 export default function Login() {
   const navigate  = useNavigate();
   const { user, profile, loading } = useAuth();
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting,  setSubmitting]  = useState(false);
+  const [resetMode,   setResetMode]   = useState(false);
+  const [resetEmail,  setResetEmail]  = useState('');
+  const [resetSent,   setResetSent]   = useState(false);
+  const [resetLoading,setResetLoading]= useState(false);
+
+  const handleReset = async () => {
+    if (!resetEmail) return;
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: window.location.origin + '/login',
+    });
+    setResetLoading(false);
+    if (error) { toast.error(error.message); return; }
+    setResetSent(true);
+  };
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -61,6 +76,52 @@ export default function Login() {
         animation: 'spin 0.8s linear infinite',
       }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
+  // ── Password reset modal ──────────────────────────────────
+  if (resetMode) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F5F5' }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: 36, width: '100%', maxWidth: 400, boxShadow: '0 8px 40px rgba(0,0,0,0.08)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#CD1719', fontWeight: 700, marginBottom: 8 }}>
+            Al Hamra Real Estate
+          </div>
+          <h2 style={{ fontSize: 22, fontWeight: 300 }}>Reset password</h2>
+          <p style={{ fontSize: 13, color: '#B2B2B2', marginTop: 6 }}>
+            Enter your email and we'll send a reset link
+          </p>
+        </div>
+        {resetSent ? (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>✉️</div>
+            <p style={{ fontWeight: 600, marginBottom: 8 }}>Check your email</p>
+            <p style={{ fontSize: 13, color: '#B2B2B2', lineHeight: 1.6 }}>
+              A password reset link has been sent to <strong>{resetEmail}</strong>
+            </p>
+            <button onClick={() => { setResetMode(false); setResetSent(false); }}
+              style={{ marginTop: 20, background: '#CD1719', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', cursor: 'pointer', fontWeight: 600 }}>
+              Back to login
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Email address</label>
+              <input type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)}
+                placeholder="your@email.com" autoFocus
+                style={{ width: '100%', border: '1.5px solid #E0E0E0', borderRadius: 8, padding: '10px 12px', fontSize: 14, outline: 'none' }} />
+            </div>
+            <button onClick={handleReset} disabled={resetLoading || !resetEmail}
+              style={{ background: '#CD1719', color: '#fff', border: 'none', borderRadius: 8, padding: '12px', fontWeight: 600, cursor: resetLoading ? 'not-allowed' : 'pointer', opacity: resetLoading || !resetEmail ? 0.6 : 1 }}>
+              {resetLoading ? 'Sending…' : 'Send reset link'}
+            </button>
+            <button onClick={() => setResetMode(false)} style={{ background: 'none', border: '1.5px solid #E0E0E0', borderRadius: 8, padding: '10px', cursor: 'pointer', fontSize: 13, color: '#555' }}>
+              Back to login
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -254,6 +315,14 @@ export default function Login() {
             </div>
 
             {/* Submit */}
+            {/* Forgot password link */}
+            <div style={{ textAlign: 'right', marginTop: -8 }}>
+              <button type="button" onClick={() => setResetMode(true)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#B2B2B2', textDecoration: 'underline' }}>
+                Forgot password?
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={submitting}

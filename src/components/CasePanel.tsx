@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Case, CaseNote, Department } from '@/types';
 import CaseAttachments from '@/components/CaseAttachments';
 import EventWorkflow from '@/components/EventWorkflow';
+import CaseHistory from '@/components/CaseHistory';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -66,7 +67,7 @@ const CasePanel = ({ caseItem, open, onClose, allowEdit = false }: Props) => {
   });
 
   const updateCase = useMutation({
-    mutationFn: async (updates: { department_id?: string; priority?: string; status?: string }) => {
+    mutationFn: async (updates: { department_id?: string; priority?: string; status?: string; due_at?: string | null }) => {
       const { error } = await supabase.from('cases').update(updates).eq('id', caseItem!.id);
       if (error) throw error;
     },
@@ -164,6 +165,17 @@ const CasePanel = ({ caseItem, open, onClose, allowEdit = false }: Props) => {
                   </SelectContent>
                 </Select>
               </div>
+              {/* Due date */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Due date</label>
+                <input
+                  type="date"
+                  className="w-full h-8 rounded-md border border-input bg-background px-2 text-sm"
+                  value={caseItem.due_at ? caseItem.due_at.slice(0,10) : ''}
+                  onChange={e => updateCase.mutate({ due_at: e.target.value || null })}
+                />
+              </div>
+
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">Priority</label>
                 <Select
@@ -216,6 +228,11 @@ const CasePanel = ({ caseItem, open, onClose, allowEdit = false }: Props) => {
                 Add note
               </Button>
             </div>
+          </div>
+
+          {/* Audit trail */}
+          <div className="pt-2">
+            <CaseHistory caseId={caseItem.id} />
           </div>
 
           {/* Attachments */}
