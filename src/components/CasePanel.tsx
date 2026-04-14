@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Phone, Mail, Clock } from 'lucide-react';
+import { Phone, Mail, Clock, Camera, CheckSquare, Square } from 'lucide-react';
 
 const priorityVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
   urgent: 'destructive', normal: 'default', low: 'secondary',
@@ -131,6 +131,11 @@ const CasePanel = ({ caseItem, open, onClose, allowEdit = false }: Props) => {
               </div>
             )}
           </div>
+
+          {/* ── EVENT / PHOTO SHOOT WORKFLOW ─────────────── */}
+          {caseItem.inquiry_type === 'event' && (
+            <EventWorkflow caseId={caseItem.id} notes={caseItem.notes ?? ''} />
+          )}
 
           {/* Intake notes */}
           {caseItem.notes && (
