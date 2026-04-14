@@ -93,7 +93,7 @@ serve(async (req) => {
     table_name: 'profiles',
     record_id:  newUser.id,
     new_data:   { email, full_name, role: role ?? 'frontdesk', department_id },
-  }).throwOnError().catch(() => {});
+  }).then(({ error }) => { if (error) console.warn('Audit log insert failed:', error.message); });
 
   return json({ ok: true, user_id: newUser.id });
 });

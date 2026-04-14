@@ -79,11 +79,12 @@ serve(async (req) => {
 
       if (existing) { skipped++; continue; }
 
-      await supabaseAdmin.from('contacts').insert({
+      const { error: insertErr } = await supabaseAdmin.from('contacts').insert({
         name,
         phone,
         source: 'whatsapp',
-      }).throwOnError().catch(() => { skipped++; });
+      });
+      if (insertErr) { skipped++; continue; }
       created++;
     }
 

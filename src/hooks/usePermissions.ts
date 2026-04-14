@@ -18,8 +18,8 @@ export const usePermissions = () => {
     enabled:  !!profile?.id && !isManager,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase.rpc('get_my_permissions');
-      return (data ?? []) as PermRow[];
+      // Permissions tables not yet created; return empty to use hardcoded defaults
+      return [] as PermRow[];
     },
   });
 
