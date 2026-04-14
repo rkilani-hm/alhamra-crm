@@ -17,6 +17,8 @@ const TYPE_COLORS: Record<InquiryType, string> = {
   vendor: 'bg-amber-100 text-amber-800 border-amber-200',
   visitor: 'bg-green-100 text-green-800 border-green-200',
   general: 'bg-gray-100 text-gray-800 border-gray-200',
+  prospect: 'bg-purple-100 text-purple-800 border-purple-200',
+  event: 'bg-rose-100 text-rose-800 border-rose-200',
 };
 
 const TYPE_LABELS: Record<InquiryType, string> = {
@@ -24,9 +26,11 @@ const TYPE_LABELS: Record<InquiryType, string> = {
   vendor: 'Vendor',
   visitor: 'Visitor',
   general: 'General',
+  prospect: 'Prospect',
+  event: 'Event',
 };
 
-const TYPES: InquiryType[] = ['leasing', 'vendor', 'visitor', 'general'];
+const TYPES: InquiryType[] = ['leasing', 'vendor', 'visitor', 'general', 'prospect', 'event'];
 
 const AdminCategories = () => {
   const qc = useQueryClient();

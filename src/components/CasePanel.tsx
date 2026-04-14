@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Case, CaseNote, Department } from '@/types';
 import CaseAttachments from '@/components/CaseAttachments';
+import EventWorkflow from '@/components/EventWorkflow';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
