@@ -2,7 +2,7 @@ export type Role = 'frontdesk' | 'department' | 'manager';
 export type Channel = 'call' | 'visit' | 'web' | 'whatsapp';
 export type Priority = 'low' | 'normal' | 'urgent';
 export type CaseStatus = 'new' | 'inprogress' | 'done';
-export type InquiryType = 'leasing' | 'vendor' | 'visitor' | 'general';
+export type InquiryType = 'leasing' | 'vendor' | 'visitor' | 'general' | 'prospect' | 'event';
 export type ClientType = 'existing_tenant' | 'potential' | 'vendor' | 'visitor';
 
 export interface Department {

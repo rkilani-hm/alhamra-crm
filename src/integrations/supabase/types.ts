@@ -369,6 +369,33 @@ export type Database = {
         }
         Relationships: []
       }
+      intake_routing: {
+        Row: {
+          auto_assign: boolean | null
+          created_at: string | null
+          default_priority: string
+          department_name: string
+          id: string
+          inquiry_type: string
+        }
+        Insert: {
+          auto_assign?: boolean | null
+          created_at?: string | null
+          default_priority?: string
+          department_name: string
+          id?: string
+          inquiry_type: string
+        }
+        Update: {
+          auto_assign?: boolean | null
+          created_at?: string | null
+          default_priority?: string
+          department_name?: string
+          id?: string
+          inquiry_type?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -692,6 +719,41 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "wa_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      web_submissions: {
+        Row: {
+          case_id: string | null
+          created_at: string | null
+          form_data: Json
+          id: string
+          inquiry_type: string
+          ip_address: string | null
+        }
+        Insert: {
+          case_id?: string | null
+          created_at?: string | null
+          form_data: Json
+          id?: string
+          inquiry_type: string
+          ip_address?: string | null
+        }
+        Update: {
+          case_id?: string | null
+          created_at?: string | null
+          form_data?: Json
+          id?: string
+          inquiry_type?: string
+          ip_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_submissions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
             referencedColumns: ["id"]
           },
         ]
