@@ -113,7 +113,7 @@ const WazzupChatPanel = ({ chatId, channelId, contactName, height = 500 }: Props
         key={url}
         src={url!}
         style={{ width: '100%', height, border: 'none', display: 'block' }}
-        allow="clipboard-write; microphone; camera"
+        allow="microphone"
         title="WhatsApp Chat"
       />
     </div>

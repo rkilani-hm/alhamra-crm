@@ -38,7 +38,7 @@ const WazzupIFrame = ({
       try {
         const d = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         // Log every message for debugging
-        if (d?.type) console.log('[Wazzup postMessage]', d.type, d.data);
+        // postMessage events intentionally not logged (H4: PII prevention)
 
         if (
           (d?.type === 'WZ_CREATE_ENTITY' || d?.type === 'WZ_OPEN_ENTITY') &&
@@ -75,7 +75,7 @@ const WazzupIFrame = ({
     <iframe
       src={url!}
       className="flex-1 border-0 w-full h-full"
-      allow="microphone *; clipboard-write *"
+      allow="microphone"
       title="Wazzup24 — All conversations"
     />
   );

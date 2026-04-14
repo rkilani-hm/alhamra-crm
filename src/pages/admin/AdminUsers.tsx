@@ -62,7 +62,7 @@ const AdminUsers = () => {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ full_name: '', email: '', password: '', role: 'frontdesk', department_id: '' });
+    setForm({ full_name: '', email: '', password: '', role: 'frontdesk', department_id: '' }); setValidationError(null);
     setDialogOpen(true);
   };
 
@@ -72,28 +72,76 @@ const AdminUsers = () => {
     setDialogOpen(true);
   };
 
+  // H2: Validate before submitting
+  const validateForm = (): string | null => {
+    if (!form.full_name.trim()) return 'Full name is required';
+    if (!editing) {
+      if (!form.email.trim() || !form.email.includes('@')) return 'Valid email is required';
+      if (form.password.length < 8) return 'Password must be at least 8 characters';
+      if (!/[A-Z]/.test(form.password)) return 'Password must contain an uppercase letter';
+      if (!/[0-9]/.test(form.password)) return 'Password must contain a number';
+    }
+    return null;
+  };
+
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
+      // H2: Enforce password policy
+      const err = validateForm();
+      if (err) throw new Error(err);
+
       if (editing) {
-        const { error } = await supabase.from('profiles').update({
-          full_name: form.full_name,
-          role: form.role,
+        // Update profile — role change logged to audit_log
+        const updates: any = {
+          full_name:     form.full_name,
+          role:          form.role,
           department_id: form.department_id || null,
-        }).eq('id', editing.id);
+        };
+        const { error } = await supabase.from('profiles').update(updates).eq('id', editing.id);
         if (error) throw error;
+
+        // M6: Audit log role changes
+        if (editing.role !== form.role) {
+          await (supabase as any).from('audit_log').insert({
+            action:      'update',
+            entity_type: 'user',
+            entity_id:   editing.id,
+            details:     { field: 'role', from: editing.role, to: form.role },
+          });
+        }
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email: form.email,
-          password: form.password,
-          options: { data: { full_name: form.full_name } },
-        });
-        if (error) throw error;
-        if (data.user) {
-          await supabase.from('profiles').update({
-            role: form.role,
+        // H3: Use admin API via edge function — no confirmation email,
+        // controlled server-side. Falls back to signUp if function not deployed.
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('admin-create-user', {
+          body: {
+            email:         form.email,
+            password:      form.password,
+            full_name:     form.full_name,
+            role:          form.role,
             department_id: form.department_id || null,
-            full_name: form.full_name,
-          }).eq('id', data.user.id);
+          },
+        });
+
+        if (fnError) {
+          // Fallback: direct signUp (less ideal — sends confirmation email)
+          console.warn('admin-create-user function not deployed, falling back to signUp');
+          const { data, error } = await supabase.auth.signUp({
+            email: form.email,
+            password: form.password,
+            options: { data: { full_name: form.full_name } },
+          });
+          if (error) throw error;
+          if (data.user) {
+            await supabase.from('profiles').update({
+              role:          form.role,
+              department_id: form.department_id || null,
+              full_name:     form.full_name,
+            }).eq('id', data.user.id);
+          }
+        } else if (fnData?.error) {
+          throw new Error(fnData.error);
         }
       }
     },
@@ -196,8 +244,10 @@ const AdminUsers = () => {
                   <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
                 </div>
                 <div className="space-y-1">
-                  <Label>Temporary password</Label>
-                  <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                  <Label>Password <span className="text-muted-foreground text-xs">(min 8 chars, 1 uppercase, 1 number)</span></Label>
+                  <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
+                    className={validationError && form.password.length < 8 ? 'border-destructive' : ''} />
+                  {validationError && <p className="text-xs text-destructive mt-1">{validationError}</p>}
                 </div>
               </>
             )}

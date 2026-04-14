@@ -1,4 +1,29 @@
 project_id = "hvhggfieaykcrlqxumeh"
 
+# wazzup-webhook must skip JWT — Wazzup24 calls it without a user JWT.
+# It is secured instead by WAZZUP_WEBHOOK_SECRET header (C5).
 [functions.wazzup-webhook]
 verify_jwt = false
+
+# All other functions require a valid authenticated JWT.
+# Role verification happens inside each function (C6).
+[functions.wazzup-sync]
+verify_jwt = true
+
+[functions.wazzup-push-contacts]
+verify_jwt = true
+
+[functions.wazzup-push-users]
+verify_jwt = true
+
+[functions.wazzup-send]
+verify_jwt = true
+
+[functions.wazzup-iframe]
+verify_jwt = true
+
+[functions.wazzup-contacts-sync]
+verify_jwt = true
+
+[functions.admin-create-user]
+verify_jwt = true

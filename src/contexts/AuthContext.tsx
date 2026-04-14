@@ -16,10 +16,12 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-const safeDefaultProfile = (userId: string): Profile =>
-  ({ id: userId, full_name: null, role: 'frontdesk', department_id: null, created_at: null } as unknown as Profile);
+// M4: Return null instead of a fake frontdesk profile.
+// ProtectedRoute will redirect to /login on null profile,
+// rather than silently granting frontdesk access on DB errors.
+const safeDefaultProfile = (_userId: string): null => null;
 
-async function loadProfile(userId: string): Promise<Profile> {
+async function loadProfile(userId: string): Promise<Profile | null> {
   try {
     const { data, error } = await supabase
       .from('profiles')
@@ -28,7 +30,7 @@ async function loadProfile(userId: string): Promise<Profile> {
       .maybeSingle();
 
     if (error) {
-      console.error('Profile fetch error:', error.message);
+      console.error('Profile fetch error');
       // Try without join
       const { data: simple } = await supabase
         .from('profiles')
@@ -36,7 +38,7 @@ async function loadProfile(userId: string): Promise<Profile> {
         .eq('id', userId)
         .maybeSingle();
       if (simple) return simple as unknown as Profile;
-      return safeDefaultProfile(userId);
+      return null; // M4: fail closed on profile error
     }
 
     if (data) return data as unknown as Profile;
@@ -49,14 +51,14 @@ async function loadProfile(userId: string): Promise<Profile> {
       .maybeSingle();
 
     if (insertErr) {
-      console.error('Profile insert error:', insertErr.message);
-      return safeDefaultProfile(userId);
+      console.error('Profile insert error');
+      return null; // M4: fail closed
     }
 
     return (created as unknown as Profile) ?? safeDefaultProfile(userId);
   } catch (err) {
-    console.error('Profile load exception:', err);
-    return safeDefaultProfile(userId);
+    console.error('Profile load exception');
+    return null; // M4: fail closed
   }
 }
 
@@ -77,7 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadProfile(user.id).then(p => {
       if (!cancelled) setProfile(p);
     }).catch(err => {
-      console.error('Failed to load profile:', err);
+      console.error('Profile load failed');
     });
 
     return () => { cancelled = true; };
@@ -97,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     }).catch((err) => {
       clearTimeout(timeout);
-      console.error('getSession failed:', err);
+      console.error('Session load failed');
       setLoading(false);
     });
 

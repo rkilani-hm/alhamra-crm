@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import useIdleTimeout from '@/hooks/useIdleTimeout';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import AlhamraLogo from '@/components/AlhamraLogo';
@@ -104,6 +105,7 @@ const useUrgentCount = (role: string) => {
 /* ─── AppLayout ───────────────────────────────────────────── */
 export default function AppLayout() {
   const { profile, signOut } = useAuth();
+  useIdleTimeout(true); // L5: auto sign-out after 60 min idle
   const navigate   = useNavigate();
   const location   = useLocation();
   const [collapsed, setCollapsed] = useState(false);
