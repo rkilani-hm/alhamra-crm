@@ -22,6 +22,30 @@ async function verifyCallerRole(req: Request, supabase: any, allowedRoles: strin
   return { ok: true };
 }
 
+
+// ── M3: In-memory rate limiting (30 msgs / user / minute) ────
+// Uses Deno's module-level Map which persists per isolate instance
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT   = 30;   // max messages per window
+const RATE_WINDOW  = 60_000; // 1 minute in ms
+
+function checkRateLimit(userId: string): { allowed: boolean; retryAfter?: number } {
+  const now  = Date.now();
+  const entry = rateLimitMap.get(userId);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_WINDOW });
+    return { allowed: true };
+  }
+
+  if (entry.count >= RATE_LIMIT) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+
+  entry.count++;
+  return { allowed: true };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   // C6: Verify caller role
@@ -34,6 +58,19 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: auth.error }), {
       status: 403, headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  // M3: Rate limit check
+  const callerToken2 = (req.headers.get('Authorization') ?? '').slice(7);
+  const { data: { user: callerUser } } = await supabaseAdmin.auth.getUser(callerToken2);
+  if (callerUser) {
+    const rl = checkRateLimit(callerUser.id);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: `Rate limit exceeded. Try again in ${rl.retryAfter}s` }), {
+        status: 429,
+        headers: { ...CORS, 'Content-Type': 'application/json', 'Retry-After': String(rl.retryAfter) },
+      });
+    }
   }
 
 

@@ -1,6 +1,11 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- L3: Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://store.wazzup24.com; frame-src https://*.wazzup24.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.wazzup24.com; media-src 'self' blob: https://store.wazzup24.com;">
+    <!-- L3: Additional security headers via meta -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Al Hamra CRM</title>

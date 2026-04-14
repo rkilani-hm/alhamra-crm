@@ -124,25 +124,9 @@ const AdminUsers = () => {
           },
         });
 
-        if (fnError) {
-          // Fallback: direct signUp (less ideal — sends confirmation email)
-          console.warn('admin-create-user function not deployed, falling back to signUp');
-          const { data, error } = await supabase.auth.signUp({
-            email: form.email,
-            password: form.password,
-            options: { data: { full_name: form.full_name } },
-          });
-          if (error) throw error;
-          if (data.user) {
-            await supabase.from('profiles').update({
-              role:          form.role,
-              department_id: form.department_id || null,
-              full_name:     form.full_name,
-            }).eq('id', data.user.id);
-          }
-        } else if (fnData?.error) {
-          throw new Error(fnData.error);
-        }
+        // H3: No fallback — if the edge function is unavailable, fail safely
+        if (fnError) throw new Error('User creation service unavailable. Please ensure the admin-create-user function is deployed.');
+        if (fnData?.error) throw new Error(fnData.error);
       }
     },
     onSuccess: () => {

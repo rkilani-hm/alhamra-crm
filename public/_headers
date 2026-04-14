@@ -1,0 +1,10 @@
+# Security headers for Lovable/Netlify deployment
+# L3: Content Security Policy
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(self), geolocation=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://store.wazzup24.com; frame-src https://*.wazzup24.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.wazzup24.com https://integrations.wazzup24.com; media-src 'self' blob: https://store.wazzup24.com;

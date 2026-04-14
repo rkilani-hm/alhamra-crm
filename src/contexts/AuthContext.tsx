@@ -11,6 +11,29 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
+// ── L5: Idle session timeout (30 minutes of inactivity) ─────
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+function resetIdleTimer(signOutFn: () => Promise<void>) {
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(async () => {
+    await signOutFn();
+    window.location.href = '/login?reason=idle';
+  }, IDLE_TIMEOUT_MS);
+}
+
+function startIdleWatcher(signOutFn: () => Promise<void>) {
+  const events = ['mousedown','mousemove','keydown','scroll','touchstart','click'];
+  const handler = () => resetIdleTimer(signOutFn);
+  events.forEach(e => window.addEventListener(e, handler, { passive: true }));
+  resetIdleTimer(signOutFn); // start timer immediately
+  return () => {
+    events.forEach(e => window.removeEventListener(e, handler));
+    if (idleTimer) clearTimeout(idleTimer);
+  };
+}
+
 const AuthContext = createContext<AuthContextType>({
   user: null, session: null, profile: null, loading: true,
   signOut: async () => {},
