@@ -19,6 +19,7 @@ import AdminDepartments   from '@/pages/admin/AdminDepartments';
 import AdminCategories    from '@/pages/admin/AdminCategories';
 import AdminPermissions  from '@/pages/admin/AdminPermissions';
 import AdminIntake      from '@/pages/admin/AdminIntake';
+import Dashboard       from '@/pages/Dashboard';
 import AdminKPI          from '@/pages/admin/AdminKPI';
 import NotFound           from '@/pages/NotFound';
 // CRM
@@ -44,6 +45,8 @@ const App = () => (
             <Route path="/"      element={<Navigate to="/login" replace />} />
 
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route index element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               {/* Workspace */}
               <Route path="/cases/new"  element={<ProtectedRoute allowedRoles={['frontdesk','manager']}><CaseNew /></ProtectedRoute>} />
               <Route path="/cases"      element={<Navigate to="/follow-up" replace />} />

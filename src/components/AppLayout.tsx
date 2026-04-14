@@ -42,6 +42,7 @@ const SECTIONS: { section: string; roles: NavRole[]; items: NavItem[] }[] = [
     section: 'Workspace',
     roles:   ['frontdesk', 'manager', 'department'],
     items:   [
+      { to: '/',          label: 'Dashboard', icon: LayoutDashboard, roles: ['frontdesk','manager','department'], end: true },
       { to: '/cases/new', label: 'New Case',  icon: PhoneIncoming, roles: ['frontdesk','manager'], end: true  },
       { to: '/follow-up', label: 'Follow-up', icon: ClipboardList, roles: ['frontdesk','manager'], badge: 'urgent' },
       { to: '/tasks',     label: 'My Tasks',  icon: CheckSquare,   roles: ['department'],          end: true  },
