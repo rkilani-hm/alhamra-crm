@@ -3,7 +3,8 @@
 // Passes options.useDealsEvents: true so WZ_CREATE_ENTITY fires when
 // agent clicks "+" in the deals suitcase — enabling CRM panel to open.
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
   'Access-Control-Allow-Origin':  'https://alhamra-crm.lovable.app',

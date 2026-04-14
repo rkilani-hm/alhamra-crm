@@ -10,7 +10,7 @@ import NotificationBell from '@/components/NotificationBell';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   PhoneIncoming, ClipboardList, CheckSquare, LogOut, Layers,
-  LayoutDashboard, Users, Building2, Tag,
+  LayoutDashboard, Users, Building2, Tag, Shield, Target,
   ChevronLeft, ChevronRight, MessageSquare, BarChart2, Calendar,
 } from 'lucide-react';
 

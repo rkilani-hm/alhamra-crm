@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { format, startOfMonth, endOfMonth, subDays } from 'date-fns';
-import { BarChart2, Target, Plus, TrendingUp, CheckCircle2, Clock, Users, Briefcase, Activity, Edit2, Trash2 } from 'lucide-react';
+import { BarChart2, Target, Plus, TrendingUp, CheckCircle2, Clock, Users, Briefcase, Activity, Edit2, Trash2, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
