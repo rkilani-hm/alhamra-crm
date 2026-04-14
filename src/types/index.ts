@@ -262,3 +262,31 @@ export interface KpiTarget {
   profiles?:               { id: string; full_name: string | null } | null;
   departments?:            { id: string; name: string } | null;
 }
+
+// ── Attachments ───────────────────────────────────────────────
+export interface CaseAttachment {
+  id:          string;
+  case_id:     string;
+  file_name:   string;
+  file_url:    string;
+  file_size:   number | null;
+  mime_type:   string | null;
+  uploaded_by: string | null;
+  created_at:  string;
+  profiles?:   { full_name: string | null } | null;
+}
+
+// ── Notifications ─────────────────────────────────────────────
+export type NotificationType = 'case_assigned' | 'case_overdue' | 'wa_message' | 'case_updated';
+
+export interface AppNotification {
+  id:         string;
+  user_id:    string;
+  type:       NotificationType;
+  title:      string;
+  body:       string | null;
+  link:       string | null;
+  read:       boolean;
+  case_id:    string | null;
+  created_at: string;
+}

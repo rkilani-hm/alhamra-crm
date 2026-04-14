@@ -5,6 +5,8 @@ import useIdleTimeout from '@/hooks/useIdleTimeout';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import AlhamraLogo from '@/components/AlhamraLogo';
+import GlobalSearch from '@/components/GlobalSearch';
+import NotificationBell from '@/components/NotificationBell';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   PhoneIncoming, ClipboardList, CheckSquare, LogOut, Layers,
@@ -391,8 +393,13 @@ export default function AppLayout() {
       </aside>
 
       {/* ═══════════════ MAIN CONTENT ═══════════════════════ */}
-      <main className="flex-1 overflow-y-auto scrollbar-thin bg-background">
-        <div className="page-enter min-h-full p-8">
+      <main className="flex-1 overflow-y-auto scrollbar-thin bg-background flex flex-col">
+        {/* Top bar: search + notifications */}
+        <div className="sticky top-0 z-20 flex items-center justify-end gap-2 px-6 py-2.5 border-b bg-background/80 backdrop-blur-sm">
+          <GlobalSearch />
+          <NotificationBell />
+        </div>
+        <div className="page-enter flex-1 p-6 sm:p-8">
           <Outlet />
         </div>
       </main>

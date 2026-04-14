@@ -1,404 +1,408 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { subDays, format, startOfDay, eachDayOfInterval } from 'date-fns';
+import {
+  subDays, format, startOfDay, eachDayOfInterval, startOfMonth, endOfMonth,
+  differenceInHours, parseISO
+} from 'date-fns';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import {
-  FileText, Clock, CheckCircle2, AlertCircle,
-  TrendingUp, TrendingDown, Users, MessageSquare,
+  FileText, Clock, CheckCircle2, AlertCircle, TrendingUp, TrendingDown,
+  Users, MessageSquare, Download, Building2, Activity, Timer, BarChart2,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-// ── Colour palette matching Alhamra brand ───────────────────
-const COLORS = {
-  navy:   'hsl(213,60%,22%)',
-  blue:   'hsl(213,50%,45%)',
-  bronze: 'hsl(38,55%,62%)',
-  green:  'hsl(152,55%,40%)',
-  amber:  'hsl(38,90%,50%)',
-  red:    'hsl(0,72%,51%)',
-  muted:  'hsl(213,20%,75%)',
+const AH = { RED: '#CD1719', DARK: '#1D1D1B', NAVY: '#1e3a5f' };
+const C  = {
+  red:    AH.RED,    navy: AH.NAVY,
+  green:  '#2d8653', amber:  '#e09c1a',
+  blue:   '#2563eb', purple: '#7c3aed',
+  muted:  '#94a3b8',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  new:        COLORS.blue,
-  inprogress: COLORS.amber,
-  done:       COLORS.green,
-};
-
-const PRIORITY_COLORS: Record<string, string> = {
-  urgent: COLORS.red,
-  normal: COLORS.navy,
-  low:    COLORS.muted,
-};
-
-// ── KPI card ────────────────────────────────────────────────
-const KpiCard = ({ label, value, sub, icon: Icon, trend, color = COLORS.navy }: any) => (
-  <div className="stat-card rounded-xl border bg-card p-5">
-    <div className="flex items-start justify-between">
-      <div>
-        <p className="text-xs text-muted-foreground mb-1">{label}</p>
-        <p className="text-3xl font-light" style={{ fontFamily: 'Cormorant Garamond, serif' }}>{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+/* ── Shared components ─────────────────────────────────────── */
+const KpiCard = ({ label, value, sub, icon: Icon, trend, color = C.navy }: any) => (
+  <div className="rounded-xl border bg-card p-5">
+    <div className="flex items-start justify-between mb-3">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: color + '15' }}>
+        <Icon className="h-4.5 w-4.5" style={{ color }} />
       </div>
-      <div className="rounded-lg p-2.5" style={{ background: `${color}18`, color }}>
-        <Icon className="h-4 w-4" />
-      </div>
+      {trend !== undefined && (
+        <span className={cn('flex items-center gap-1 text-xs font-medium', trend >= 0 ? 'text-green-600' : 'text-red-600')}>
+          {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+          {Math.abs(trend)}%
+        </span>
+      )}
     </div>
-    {trend !== undefined && (
-      <div className={`flex items-center gap-1 mt-3 text-xs font-medium ${trend >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-        {trend >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-        {Math.abs(trend)}% vs last 7 days
-      </div>
-    )}
+    <p className="text-2xl font-light" style={{ fontFamily: 'Cormorant Garamond, serif' }}>{value}</p>
+    <p className="text-xs font-medium text-foreground mt-0.5">{label}</p>
+    {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
   </div>
 );
 
-// ── Chart section wrapper ────────────────────────────────────
-const ChartCard = ({ title, sub, children }: any) => (
+const ChartCard = ({ title, sub, children, onExport }: any) => (
   <div className="rounded-xl border bg-card p-5">
-    <div className="mb-4">
-      <h3 className="font-medium text-sm">{title}</h3>
-      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+    <div className="flex items-start justify-between mb-4">
+      <div>
+        <p className="text-sm font-semibold">{title}</p>
+        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+      </div>
+      {onExport && (
+        <button onClick={onExport} className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors border rounded px-2 py-1">
+          <Download className="h-3 w-3" /> CSV
+        </button>
+      )}
     </div>
     {children}
   </div>
 );
 
-// ── Tooltip styles ────────────────────────────────────────────
-const ChartTooltip = ({ active, payload, label }: any) => {
+const CTip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border bg-card p-2.5 text-xs shadow-md">
-      <p className="font-medium mb-1">{label}</p>
+    <div className="rounded-lg border bg-card px-3 py-2 shadow-lg text-xs space-y-1">
+      {label && <p className="font-medium text-muted-foreground">{label}</p>}
       {payload.map((p: any) => (
-        <div key={p.name} className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-muted-foreground capitalize">{p.name}:</span>
-          <span className="font-medium">{p.value}</span>
-        </div>
+        <p key={p.dataKey} style={{ color: p.color }}>
+          {p.name ?? p.dataKey}: <strong>{p.value}</strong>
+        </p>
       ))}
     </div>
   );
 };
 
-// ── Main ─────────────────────────────────────────────────────
+// CSV export helper
+const exportCsv = (rows: any[], filename: string) => {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]).join(',');
+  const body    = rows.map(r => Object.values(r).map(v => `"${v ?? ''}"`).join(',')).join('\n');
+  const blob    = new Blob([headers + '\n' + body], { type: 'text/csv' });
+  const a       = document.createElement('a');
+  a.href        = URL.createObjectURL(blob);
+  a.download    = filename;
+  a.click();
+};
+
+/* ── Main Reports page ─────────────────────────────────────── */
+const RANGES = ['7d', '30d', 'MTD', '90d'] as const;
+type Range = typeof RANGES[number];
+
 const Reports = () => {
-  const today   = new Date();
-  const d30ago  = subDays(today, 30);
-  const d7ago   = subDays(today, 7);
-  const d14ago  = subDays(today, 14);
+  const [range, setRange] = useState<Range>('30d');
+  const today    = new Date();
+  const rangeMap: Record<Range, Date> = {
+    '7d':  subDays(today, 7),
+    '30d': subDays(today, 30),
+    'MTD': startOfMonth(today),
+    '90d': subDays(today, 90),
+  };
+  const since   = rangeMap[range];
+  const sinceIso = since.toISOString();
 
-  // All cases for the last 30 days
+  // ── Queries ───────────────────────────────────────────────
   const { data: cases = [] } = useQuery({
-    queryKey: ['reports-cases'],
+    queryKey: ['rep-cases', range],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('cases')
-        .select('*, departments(name)')
-        .gte('created_at', d30ago.toISOString())
-        .order('created_at', { ascending: true });
+      const { data } = await (supabase as any).from('cases')
+        .select('id,status,priority,created_at,updated_at,channel,inquiry_type,department_id,created_by,departments(name),profiles:created_by(full_name)')
+        .gte('created_at', sinceIso);
       return data ?? [];
     },
   });
 
-  // Previous period for trends
   const { data: prevCases = [] } = useQuery({
-    queryKey: ['reports-cases-prev'],
+    queryKey: ['rep-cases-prev', range],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('cases')
-        .select('id, status, priority, created_at')
-        .gte('created_at', d14ago.toISOString())
-        .lt('created_at', d7ago.toISOString());
+      const prevEnd   = since.toISOString();
+      const prevStart = subDays(since, differenceInHours(today, since) / 24).toISOString();
+      const { data }  = await (supabase as any).from('cases').select('id')
+        .gte('created_at', prevStart).lt('created_at', prevEnd);
       return data ?? [];
     },
   });
 
-  // WhatsApp conversations count
-  const { data: waCount } = useQuery({
-    queryKey: ['reports-wa'],
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['rep-contacts', range],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('wa_conversations')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', d30ago.toISOString());
-      return count ?? 0;
+      const { data } = await (supabase as any).from('contacts').select('id,source,client_type,created_at').gte('created_at', sinceIso);
+      return data ?? [];
     },
   });
 
-  // ── Derived KPIs ─────────────────────────────────────────
-  const thisWeek  = cases.filter(c => new Date(c.created_at) >= d7ago);
-  const lastWeek  = prevCases;
+  const { data: activities = [] } = useQuery({
+    queryKey: ['rep-activities', range],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('activities').select('id,type,created_at,created_by,profiles:created_by(full_name)').gte('created_at', sinceIso);
+      return data ?? [];
+    },
+  });
 
-  const totalOpen   = cases.filter(c => c.status !== 'done').length;
-  const totalDone   = cases.filter(c => c.status === 'done').length;
-  const urgent      = cases.filter(c => c.priority === 'urgent' && c.status !== 'done').length;
+  const { data: waMessages = [] } = useQuery({
+    queryKey: ['rep-wa', range],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('wa_messages').select('id,direction,sent_at').gte('sent_at', sinceIso);
+      return data ?? [];
+    },
+  });
+
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['rep-profiles'],
+    queryFn: async () => {
+      const { data } = await supabase.from('profiles').select('id,full_name,role,department_id,departments(name)');
+      return (data ?? []) as any[];
+    },
+  });
+
+  // ── Computed metrics ──────────────────────────────────────
   const totalCases  = cases.length;
+  const openCases   = cases.filter((c: any) => c.status !== 'done').length;
+  const doneCases   = cases.filter((c: any) => c.status === 'done').length;
+  const urgent      = cases.filter((c: any) => c.priority === 'urgent' && c.status !== 'done').length;
+  const prevTotal   = prevCases.length;
+  const trend       = prevTotal > 0 ? Math.round(((totalCases - prevTotal) / prevTotal) * 100) : 0;
 
-  const weekTrend = lastWeek.length > 0
-    ? Math.round(((thisWeek.length - lastWeek.length) / lastWeek.length) * 100)
-    : 0;
+  // Avg resolution time (done cases)
+  const doneCasesWithTime = cases.filter((c: any) => c.status === 'done' && c.updated_at);
+  const avgResolutionH    = doneCasesWithTime.length > 0
+    ? Math.round(doneCasesWithTime.reduce((s: number, c: any) =>
+        s + differenceInHours(parseISO(c.updated_at), parseISO(c.created_at)), 0) / doneCasesWithTime.length)
+    : null;
 
-  // Avg resolution time (done cases, in hours)
-  const doneCasesWithTime = cases.filter(c => c.status === 'done');
-  const avgHours = doneCasesWithTime.length > 0
-    ? Math.round(doneCasesWithTime.reduce((sum, c) => {
-        const diff = (new Date().getTime() - new Date(c.created_at).getTime()) / 3600000;
-        return sum + Math.min(diff, 720); // cap at 30 days
-      }, 0) / doneCasesWithTime.length)
-    : 0;
+  const waOutbound = waMessages.filter((m: any) => m.direction === 'outbound').length;
+  const waInbound  = waMessages.filter((m: any) => m.direction === 'inbound').length;
 
-  // ── Chart data ────────────────────────────────────────────
-
-  // Daily cases — last 14 days
-  const days14 = eachDayOfInterval({ start: subDays(today, 13), end: today });
-  const dailyData = days14.map(day => {
-    const label = format(day, 'dd MMM');
-    const dayStart = startOfDay(day);
-    const dayEnd   = new Date(dayStart.getTime() + 86400000);
-    const dayCases = cases.filter(c => {
-      const d = new Date(c.created_at);
-      return d >= dayStart && d < dayEnd;
-    });
+  // ── Daily trend ───────────────────────────────────────────
+  const numDays = Math.min(30, Math.round(differenceInHours(today, since) / 24));
+  const days    = eachDayOfInterval({ start: subDays(today, numDays - 1), end: today });
+  const dailyData = days.map(day => {
+    const s = startOfDay(day); const e = new Date(s.getTime() + 86400000);
     return {
-      date:   label,
-      new:        dayCases.filter(c => c.status === 'new').length,
-      inprogress: dayCases.filter(c => c.status === 'inprogress').length,
-      done:       dayCases.filter(c => c.status === 'done').length,
-      total:      dayCases.length,
+      day:      format(day, numDays > 14 ? 'd/M' : 'dd MMM'),
+      created:  cases.filter((c: any) => { const d = parseISO(c.created_at); return d >= s && d < e; }).length,
+      resolved: cases.filter((c: any) => c.status === 'done' && c.updated_at && (() => { const d = parseISO(c.updated_at); return d >= s && d < e; })()).length,
     };
   });
 
-  // By department
-  const deptMap: Record<string, { name: string; open: number; done: number }> = {};
+  // ── By department ─────────────────────────────────────────
+  const deptMap: Record<string, { name: string; created: number; done: number; urgent: number }> = {};
   cases.forEach((c: any) => {
     const name = c.departments?.name ?? 'Unassigned';
-    if (!deptMap[name]) deptMap[name] = { name, open: 0, done: 0 };
+    if (!deptMap[name]) deptMap[name] = { name, created: 0, done: 0, urgent: 0 };
+    deptMap[name].created++;
     if (c.status === 'done') deptMap[name].done++;
-    else                     deptMap[name].open++;
+    if (c.priority === 'urgent') deptMap[name].urgent++;
   });
-  const deptData = Object.values(deptMap).sort((a, b) => (b.open + b.done) - (a.open + a.done));
+  const deptData = Object.values(deptMap).sort((a, b) => b.created - a.created);
 
-  // By status (pie)
-  const statusCounts = {
-    new:        cases.filter(c => c.status === 'new').length,
-    inprogress: cases.filter(c => c.status === 'inprogress').length,
-    done:       totalDone,
-  };
-  const pieData = Object.entries(statusCounts)
-    .filter(([, v]) => v > 0)
-    .map(([k, v]) => ({ name: k === 'inprogress' ? 'In Progress' : k, value: v, key: k }));
-
-  // By priority
-  const priorityData = [
-    { name: 'Urgent', value: cases.filter(c => c.priority === 'urgent').length, color: COLORS.red },
-    { name: 'Normal', value: cases.filter(c => c.priority === 'normal').length, color: COLORS.navy },
-    { name: 'Low',    value: cases.filter(c => c.priority === 'low').length,    color: COLORS.muted },
-  ].filter(d => d.value > 0);
-
-  // By channel
+  // ── By channel ────────────────────────────────────────────
   const channelMap: Record<string, number> = {};
+  cases.forEach((c: any) => { const ch = c.channel ?? 'unknown'; channelMap[ch] = (channelMap[ch] ?? 0) + 1; });
+  const channelData = Object.entries(channelMap).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
+  const PIE_COLORS = [C.red, C.navy, C.green, C.amber, C.purple, C.blue];
+
+  // ── SLA compliance (resolved within 24h = compliant) ─────
+  const slaTarget = 24;
+  const slaPassed = doneCasesWithTime.filter((c: any) =>
+    differenceInHours(parseISO(c.updated_at), parseISO(c.created_at)) <= slaTarget
+  ).length;
+  const slaPct = doneCasesWithTime.length > 0
+    ? Math.round((slaPassed / doneCasesWithTime.length) * 100) : null;
+
+  // ── Agent workload ────────────────────────────────────────
+  const agentMap: Record<string, { name: string; open: number; done: number; activities: number }> = {};
+  profiles.filter((p: any) => p.role !== 'department').forEach((p: any) => {
+    agentMap[p.id] = { name: p.full_name ?? 'Unknown', open: 0, done: 0, activities: 0 };
+  });
   cases.forEach((c: any) => {
-    channelMap[c.channel ?? 'unknown'] = (channelMap[c.channel ?? 'unknown'] ?? 0) + 1;
+    if (c.created_by && agentMap[c.created_by]) {
+      if (c.status !== 'done') agentMap[c.created_by].open++;
+      else agentMap[c.created_by].done++;
+    }
   });
-  const channelData = Object.entries(channelMap).map(([name, value]) => ({ name, value }));
-
-  // Weekly volume (last 4 weeks)
-  const weeklyData = [3, 2, 1, 0].map(weeksAgo => {
-    const start = subDays(today, (weeksAgo + 1) * 7);
-    const end   = subDays(today, weeksAgo * 7);
-    const wCases = cases.filter(c => {
-      const d = new Date(c.created_at);
-      return d >= start && d < end;
-    });
-    return {
-      week:  `W-${weeksAgo === 0 ? 'curr' : weeksAgo}`,
-      cases: wCases.length,
-      done:  wCases.filter(c => c.status === 'done').length,
-    };
+  activities.forEach((a: any) => {
+    if (a.created_by && agentMap[a.created_by]) agentMap[a.created_by].activities++;
   });
+  const agentData = Object.values(agentMap).filter(a => a.open + a.done + a.activities > 0)
+    .sort((a, b) => (b.open + b.done) - (a.open + a.done));
 
-  const RADIAN = Math.PI / 180;
-  const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-    if (percent < 0.06) return null;
-    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + r * Math.cos(-midAngle * RADIAN);
-    const y = cy + r * Math.sin(-midAngle * RADIAN);
-    return <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={600}>{`${(percent*100).toFixed(0)}%`}</text>;
-  };
+  // ── Inquiry type distribution ─────────────────────────────
+  const typeMap: Record<string, number> = {};
+  cases.forEach((c: any) => { const t = c.inquiry_type ?? 'general'; typeMap[t] = (typeMap[t] ?? 0) + 1; });
+  const typeData = Object.entries(typeMap).map(([name, value]) => ({ name: name.charAt(0).toUpperCase()+name.slice(1), value }));
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-medium text-foreground" style={{ fontFamily: 'Cormorant Garamond, serif' }}>
-          Reports & KPIs
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">Last 30 days · refreshes on load</p>
-      </div>
-
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Total cases"   value={totalCases}  sub="last 30 days"    icon={FileText}      trend={weekTrend}  color={COLORS.navy}   />
-        <KpiCard label="Open cases"    value={totalOpen}   sub={`${urgent} urgent`} icon={Clock}       color={COLORS.amber}  />
-        <KpiCard label="Resolved"      value={totalDone}   sub={`${avgHours}h avg`} icon={CheckCircle2} color={COLORS.green}  />
-        <KpiCard label="Urgent open"   value={urgent}      sub="needs attention"  icon={AlertCircle}   color={COLORS.red}    />
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="WhatsApp chats"  value={waCount ?? 0}     sub="last 30 days"  icon={MessageSquare} color={COLORS.blue}   />
-        <KpiCard label="This week"       value={thisWeek.length}  sub="cases logged"  icon={TrendingUp}    color={COLORS.bronze} />
-        <KpiCard label="Resolution rate" value={totalCases > 0 ? `${Math.round((totalDone/totalCases)*100)}%` : '—'} sub="cases resolved" icon={CheckCircle2} color={COLORS.green} />
-        <KpiCard label="Avg resolution"  value={avgHours > 0 ? `${avgHours}h` : '—'} sub="per closed case" icon={Clock} color={COLORS.muted} />
-      </div>
-
-      {/* Charts row 1 */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2">
-          <ChartCard title="Daily case volume" sub="Last 14 days — new, in-progress, done">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={dailyData} barSize={6} barGap={2}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,20%,88%)" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={1} />
-                <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} width={24} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="new"        fill={COLORS.blue}  name="New"         radius={[3,3,0,0]} />
-                <Bar dataKey="inprogress" fill={COLORS.amber} name="In Progress" radius={[3,3,0,0]} />
-                <Bar dataKey="done"       fill={COLORS.green} name="Done"        radius={[3,3,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Page header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-3xl font-medium" style={{ fontFamily: 'Cormorant Garamond, serif' }}>Reports</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Analytics dashboard · Al Hamra Real Estate</p>
         </div>
-
-        <ChartCard title="Status breakdown" sub="All 30-day cases">
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={pieData} cx="50%" cy="50%"
-                innerRadius={55} outerRadius={90}
-                paddingAngle={3} dataKey="value"
-                labelLine={false} label={renderPieLabel}
-              >
-                {pieData.map(d => (
-                  <Cell key={d.key} fill={STATUS_COLORS[d.key] ?? COLORS.muted} />
-                ))}
-              </Pie>
-              <Tooltip content={<ChartTooltip />} />
-              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
-
-      {/* Charts row 2 */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2">
-          <ChartCard title="Cases by department" sub="Open vs resolved">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={deptData} layout="vertical" barSize={10} barGap={3}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,20%,88%)" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={90} />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="open" fill={COLORS.amber} name="Open"     radius={[0,3,3,0]} />
-                <Bar dataKey="done" fill={COLORS.green} name="Resolved" radius={[0,3,3,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <ChartCard title="By priority">
-            <ResponsiveContainer width="100%" height={90}>
-              <BarChart data={priorityData} barSize={18}>
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                <YAxis hide allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="value" name="Cases" radius={[4,4,0,0]}>
-                  {priorityData.map(d => <Cell key={d.name} fill={d.color} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="By channel">
-            <ResponsiveContainer width="100%" height={90}>
-              <BarChart data={channelData} barSize={18}>
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                <YAxis hide allowDecimals={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="value" name="Cases" fill={COLORS.navy} radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
+        {/* Range selector */}
+        <div className="flex rounded-lg border overflow-hidden bg-muted/30">
+          {RANGES.map(r => (
+            <button key={r} onClick={() => setRange(r)}
+              className={cn('px-4 py-1.5 text-xs font-medium transition-colors',
+                range === r ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}>
+              {r}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Weekly trend */}
-      <ChartCard title="Weekly volume trend" sub="Cases opened vs resolved — last 4 weeks">
-        <ResponsiveContainer width="100%" height={180}>
-          <LineChart data={weeklyData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(213,20%,88%)" vertical={false} />
-            <XAxis dataKey="week" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} allowDecimals={false} width={24} />
-            <Tooltip content={<ChartTooltip />} />
+      {/* KPI row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KpiCard label="Total Cases" value={totalCases} trend={trend} icon={FileText}   color={C.navy} sub={`${prevTotal} prev period`} />
+        <KpiCard label="Open"        value={openCases}                 icon={Clock}      color={C.amber} />
+        <KpiCard label="Resolved"    value={doneCases}                 icon={CheckCircle2} color={C.green} />
+        <KpiCard label="Urgent Open" value={urgent}                    icon={AlertCircle} color={C.red} />
+        <KpiCard label="Avg Resolution" value={avgResolutionH != null ? `${avgResolutionH}h` : '—'} icon={Timer} color={C.blue} sub="resolved cases" />
+        <KpiCard label="SLA ≤24h"    value={slaPct != null ? `${slaPct}%` : '—'}         icon={BarChart2} color={C.purple} sub={`${slaPassed}/${doneCasesWithTime.length} on time`} />
+      </div>
+
+      {/* WhatsApp metrics row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <KpiCard label="WA Inbound"  value={waInbound}            icon={MessageSquare} color={C.green} />
+        <KpiCard label="WA Outbound" value={waOutbound}           icon={MessageSquare} color={C.navy} />
+        <KpiCard label="New Contacts" value={contacts.length}     icon={Users}         color={C.blue} />
+        <KpiCard label="Activities"  value={activities.length}    icon={Activity}      color={C.purple} />
+      </div>
+
+      {/* Daily trend chart */}
+      <ChartCard title="Daily case volume" sub={`Created vs resolved · last ${numDays} days`}
+        onExport={() => exportCsv(dailyData, `cases-daily-${range}.csv`)}>
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={dailyData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+            <XAxis dataKey="day" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} interval={numDays > 14 ? 3 : 1} />
+            <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} width={24} />
+            <Tooltip content={<CTip />} />
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-            <Line type="monotone" dataKey="cases" stroke={COLORS.navy}  strokeWidth={2} dot={{ r: 4, fill: COLORS.navy }}  name="Opened"   />
-            <Line type="monotone" dataKey="done"  stroke={COLORS.green} strokeWidth={2} dot={{ r: 4, fill: COLORS.green }} name="Resolved" />
+            <Line type="monotone" dataKey="created"  name="Created"  stroke={C.navy}  strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="resolved" name="Resolved" stroke={C.green} strokeWidth={2} dot={false} strokeDasharray="4 2" />
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Department table */}
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="px-5 py-4 border-b">
-          <h3 className="font-medium text-sm">Department performance</h3>
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40">
-            <tr>
-              {['Department','Total','Open','Resolved','% Done','Urgent'].map(h => (
-                <th key={h} className="px-5 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {deptData.map(d => {
-              const total = d.open + d.done;
-              const pct   = total > 0 ? Math.round((d.done / total) * 100) : 0;
-              const urg   = cases.filter((c: any) => c.departments?.name === d.name && c.priority === 'urgent' && c.status !== 'done').length;
-              return (
-                <tr key={d.name} className="table-row-hover">
-                  <td className="px-5 py-3 font-medium">{d.name}</td>
-                  <td className="px-5 py-3">{total}</td>
-                  <td className="px-5 py-3">
-                    <span className="rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-medium">{d.open}</span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className="rounded-full bg-green-50 text-green-700 px-2 py-0.5 text-xs font-medium">{d.done}</span>
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-20 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full rounded-full bg-green-500" style={{ width: `${pct}%` }} />
-                      </div>
-                      <span className="text-xs text-muted-foreground">{pct}%</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3">
-                    {urg > 0
-                      ? <span className="rounded-full bg-red-50 text-red-700 px-2 py-0.5 text-xs font-medium">{urg}</span>
-                      : <span className="text-muted-foreground">—</span>}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      {/* Two column: dept + channel */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ChartCard title="Cases by department" sub="Created in period"
+          onExport={() => exportCsv(deptData, `cases-by-dept-${range}.csv`)}>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={deptData} layout="vertical" barSize={14}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={80} />
+              <Tooltip content={<CTip />} />
+              <Bar dataKey="created" name="Created" fill={C.navy}  radius={[0,4,4,0]} />
+              <Bar dataKey="done"    name="Resolved" fill={C.green} radius={[0,4,4,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard title="Cases by channel" sub="Distribution">
+          {channelData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={channelData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}
+                  label={({ name, percent }) => `${name} ${(percent*100).toFixed(0)}%`}
+                  labelLine={false} fontSize={10}>
+                  {channelData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                </Pie>
+                <Tooltip content={<CTip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">No data</div>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* Agent workload table */}
+      {agentData.length > 0 && (
+        <ChartCard title="Agent workload" sub="Cases + activities in period"
+          onExport={() => exportCsv(agentData, `agent-workload-${range}.csv`)}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b">
+                <tr>{['Agent','Open cases','Resolved','Activities','Total load'].map(h => (
+                  <th key={h} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody className="divide-y">
+                {agentData.map((a, i) => {
+                  const total = a.open + a.done + a.activities;
+                  const maxTotal = Math.max(...agentData.map(x => x.open + x.done + x.activities));
+                  const pct = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
+                  return (
+                    <tr key={i} className="hover:bg-muted/20">
+                      <td className="px-3 py-2.5 font-medium text-sm">{a.name}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={cn('text-xs font-semibold', a.open > 5 ? 'text-amber-600' : 'text-foreground')}>{a.open}</span>
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-green-600 font-semibold">{a.done}</td>
+                      <td className="px-3 py-2.5 text-xs">{a.activities}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden max-w-[80px]">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: C.navy }} />
+                          </div>
+                          <span className="text-[10px] text-muted-foreground tabular-nums">{total}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </ChartCard>
+      )}
+
+      {/* Two column: inquiry types + WA trend */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ChartCard title="Inquiry types" sub="Case classification">
+          {typeData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={typeData} barSize={24}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} width={24} />
+                <Tooltip content={<CTip />} />
+                <Bar dataKey="value" name="Cases" radius={[4,4,0,0]}>
+                  {typeData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[180px] text-muted-foreground text-sm">No data</div>
+          )}
+        </ChartCard>
+
+        <ChartCard title="WhatsApp volume" sub="Inbound vs outbound messages"
+          onExport={() => exportCsv([{ period: range, inbound: waInbound, outbound: waOutbound }], `wa-volume-${range}.csv`)}>
+          <div className="flex items-center gap-6 mt-6 justify-center">
+            {[
+              { label: 'Inbound',  val: waInbound,  color: C.green },
+              { label: 'Outbound', val: waOutbound, color: C.navy },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="text-center">
+                <p className="text-4xl font-light" style={{ fontFamily: 'Cormorant Garamond, serif', color }}>{val}</p>
+                <p className="text-xs text-muted-foreground mt-1">{label}</p>
+              </div>
+            ))}
+            <div className="text-center">
+              <p className="text-4xl font-light" style={{ fontFamily: 'Cormorant Garamond, serif', color: C.amber }}>
+                {waInbound + waOutbound > 0 ? Math.round((waOutbound / (waInbound + waOutbound)) * 100) : 0}%
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Response rate</p>
+            </div>
+          </div>
+        </ChartCard>
       </div>
     </div>
   );
