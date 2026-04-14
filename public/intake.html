@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Al Hamra Real Estate — Enquiry Form</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red:    #CD1719;
+    --dark:   #1D1D1B;
+    --gray:   #B2B2B2;
+    --light:  #F5F5F5;
+    --white:  #FFFFFF;
+    --border: #E0E0E0;
+    --green:  #2d8653;
+    --radius: 10px;
+    --font:   'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  html, body { height: 100%; background: var(--light); font-family: var(--font); color: var(--dark); font-size: 14px; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 24px; }
+  .logo-text { font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--red); font-weight: 700; }
+  .header h1 { font-size: 22px; font-weight: 300; color: var(--dark); margin: 6px 0 4px; letter-spacing: -0.3px; }
+  .header p  { font-size: 13px; color: var(--gray); }
+
+  /* Type selector pills */
+  .type-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+  .type-btn  {
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    background: var(--white); cursor: pointer; padding: 14px 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: border-color 0.15s, background 0.15s; user-select: none;
+  }
+  .type-btn:hover       { border-color: var(--red); }
+  .type-btn.active      { border-color: var(--red); background: #fff5f5; }
+  .type-btn .icon       { font-size: 22px; }
+  .type-btn .lbl        { font-size: 12px; font-weight: 600; color: var(--dark); }
+  .type-btn .sub        { font-size: 10px; color: var(--gray); text-align: center; }
+  .type-btn.active .lbl { color: var(--red); }
+
+  /* Card / section */
+  .card  { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 14px; }
+  .sec-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gray); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+  .sec-title::before { content: ''; width: 3px; height: 12px; background: var(--red); border-radius: 2px; }
+
+  /* Fields */
+  .row   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .col   { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .col:last-child { margin-bottom: 0; }
+  label  { font-size: 11px; font-weight: 600; color: #555; }
+  label .req { color: var(--red); }
+  input, select, textarea {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 7px;
+    padding: 9px 11px; font-size: 13px; font-family: var(--font);
+    color: var(--dark); background: var(--white); outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--red); }
+  input.err, select.err { border-color: #e53e3e; }
+  textarea { resize: vertical; min-height: 80px; }
+  .hint  { font-size: 10px; color: var(--gray); margin-top: 2px; }
+
+  /* Photo shoot special */
+  .permit-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 14px; margin-top: 10px; }
+  .permit-box p { font-size: 12px; color: #92400e; line-height: 1.5; }
+  .permit-box strong { display: block; margin-bottom: 4px; }
+
+  /* Priority radio */
+  .urgency-row { display: flex; gap: 8px; }
+  .urg-btn { flex: 1; border: 1.5px solid var(--border); border-radius: 7px; padding: 8px; cursor: pointer; text-align: center; font-size: 12px; font-weight: 600; transition: all 0.15s; }
+  .urg-btn.sel-normal  { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+  .urg-btn.sel-urgent  { border-color: var(--red); background: #fff5f5; color: var(--red); }
+
+  /* Submit */
+  .submit-btn {
+    width: 100%; background: var(--red); color: var(--white);
+    border: none; border-radius: var(--radius); padding: 14px;
+    font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: 0.02em;
+    transition: background 0.15s; margin-top: 4px;
+  }
+  .submit-btn:hover:not(:disabled) { background: #b01215; }
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Success state */
+  .success { display: none; text-align: center; padding: 40px 20px; }
+  .success.show { display: block; }
+  .check { font-size: 52px; margin-bottom: 12px; }
+  .success h2 { font-size: 20px; font-weight: 300; margin-bottom: 8px; }
+  .ref-badge { display: inline-block; background: var(--red); color: var(--white); border-radius: 6px; padding: 6px 14px; font-size: 15px; font-family: monospace; font-weight: 700; margin: 10px 0 14px; letter-spacing: 0.1em; }
+  .success p { font-size: 13px; color: var(--gray); line-height: 1.6; }
+  .new-btn { background: none; border: 1.5px solid var(--border); color: var(--dark); border-radius: 7px; padding: 9px 20px; cursor: pointer; font-size: 13px; margin-top: 16px; }
+  .new-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* Error */
+  .err-msg { background: #fff5f5; border: 1px solid #fca5a5; border-radius: 7px; padding: 10px 14px; margin-top: 10px; font-size: 12px; color: #b91c1c; display: none; }
+  .err-msg.show { display: block; }
+
+  /* Privacy */
+  .privacy { font-size: 11px; color: var(--gray); text-align: center; margin-top: 16px; line-height: 1.5; }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .row { grid-template-columns: 1fr; }
+    .type-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Hide/show sections */
+  [data-section] { display: none; }
+  [data-section].visible { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-text">Al Hamra Real Estate</div>
+    <h1>How can we help you?</h1>
+    <p>Select your enquiry type below</p>
+  </div>
+
+  <!-- SUCCESS STATE -->
+  <div class="success" id="success">
+    <div class="check">✅</div>
+    <h2>Request received!</h2>
+    <div class="ref-badge" id="ref-display">WEB-...</div>
+    <p>Our team will review your request and contact you shortly.<br>Please keep your reference number for follow-up.</p>
+    <button class="new-btn" onclick="resetForm()">Submit another request</button>
+  </div>
+
+  <!-- FORM -->
+  <div id="form-wrap">
+
+    <!-- Type selector -->
+    <div class="type-grid">
+      <button class="type-btn" onclick="setType('leasing')" id="btn-leasing">
+        <span class="icon">🏢</span>
+        <span class="lbl">Existing Tenant</span>
+        <span class="sub">Maintenance, payments, requests</span>
+      </button>
+      <button class="type-btn" onclick="setType('prospect')" id="btn-prospect">
+        <span class="icon">🔍</span>
+        <span class="lbl">Prospect Tenant</span>
+        <span class="sub">Interested in leasing a unit</span>
+      </button>
+      <button class="type-btn" onclick="setType('vendor')" id="btn-vendor">
+        <span class="icon">🤝</span>
+        <span class="lbl">Vendor / Supplier</span>
+        <span class="sub">Services, proposals, registration</span>
+      </button>
+      <button class="type-btn" onclick="setType('visitor')" id="btn-visitor">
+        <span class="icon">🪪</span>
+        <span class="lbl">Visitor</span>
+        <span class="sub">Walk-in, meeting, delivery</span>
+      </button>
+      <button class="type-btn" onclick="setType('event')" id="btn-event" style="grid-column: 1/-1;">
+        <span class="icon">📸</span>
+        <span class="lbl">Photo / Film Shoot &amp; Events</span>
+        <span class="sub">Photography, videography, corporate events, media</span>
+      </button>
+    </div>
+
+    <!-- ── COMMON FIELDS ── -->
+    <div id="common-fields" style="display:none;">
+      <div class="card">
+        <div class="sec-title">Your information</div>
+        <div class="row">
+          <div class="col">
+            <label>Full name <span class="req">*</span></label>
+            <input type="text" id="f-name" placeholder="Mohammed Al-Rashid" />
+          </div>
+          <div class="col">
+            <label>Phone <span class="req">*</span></label>
+            <input type="tel" id="f-phone" placeholder="+965 9999 9999" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <label>Email address</label>
+            <input type="email" id="f-email" placeholder="name@company.com" />
+          </div>
+          <div class="col">
+            <label>Job title</label>
+            <input type="text" id="f-jobtitle" placeholder="FM Manager, CEO…" />
+          </div>
+        </div>
+        <div class="col">
+          <label>Company / Organization name</label>
+          <input type="text" id="f-company" placeholder="Company name" />
+        </div>
+      </div>
+
+      <!-- ── LEASING (existing tenant) ── -->
+      <div data-section="leasing" id="sec-leasing">
+        <div class="card">
+          <div class="sec-title">Tenancy details</div>
+          <div class="row">
+            <div class="col">
+              <label>Unit number</label>
+              <input type="text" id="f-unit" placeholder="e.g. 1204" />
+            </div>
+            <div class="col">
+              <label>Floor</label>
+              <input type="text" id="f-floor" placeholder="e.g. 12" />
+            </div>
+          </div>
+          <div class="col">
+            <label>Contract / Lease number</label>
+            <input type="text" id="f-contract" placeholder="e.g. LC-2024-00145" />
+          </div>
+          <div class="col">
+            <label>Subject / Request <span class="req">*</span></label>
+            <input type="text" id="f-subject" placeholder="Briefly describe your request" />
+          </div>
+          <div class="col">
+            <label>Priority</label>
+            <div class="urgency-row">
+              <div class="urg-btn sel-normal" id="urg-normal" onclick="setUrgency('normal')">Normal</div>
+              <div class="urg-btn" id="urg-urgent" onclick="setUrgency('urgent')">🚨 Urgent</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PROSPECT TENANT ── -->
+      <div data-section="prospect" id="sec-prospect">
+        <div class="card">
+          <div class="sec-title">Leasing interest</div>
+          <div class="row">
+            <div class="col">
+              <label>Unit type interested in</label>
+              <select id="f-unittype">
+                <option value="">Select…</option>
+                <option>Office</option>
+                <option>Retail</option>
+                <option>Restaurant / F&amp;B</option>
+                <option>Warehouse</option>
+                <option>Residential</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="col">
+              <label>Preferred area (sqm)</label>
+              <input type="text" id="f-area" placeholder="e.g. 200–500 sqm" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label>Estimated budget (KWD/month)</label>
+              <input type="text" id="f-budget" placeholder="e.g. 1,500 – 3,000" />
+            </div>
+            <div class="col">
+              <label>Preferred move-in date</label>
+              <input type="date" id="f-movein" />
+            </div>
+          </div>
+          <div class="col">
+            <label>Additional requirements</label>
+            <textarea id="f-prospect-notes" placeholder="Parking, fit-out, specific floor preference…" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VENDOR ── -->
+      <div data-section="vendor" id="sec-vendor">
+        <div class="card">
+          <div class="sec-title">Vendor information</div>
+          <div class="row">
+            <div class="col">
+              <label>Service / Supply type <span class="req">*</span></label>
+              <select id="f-service">
+                <option value="">Select…</option>
+                <option>Cleaning Services</option>
+                <option>Security Services</option>
+                <option>Maintenance &amp; Repair</option>
+                <option>IT &amp; Technology</option>
+                <option>Catering &amp; F&amp;B</option>
+                <option>Landscaping</option>
+                <option>Fit-out &amp; Construction</option>
+                <option>Consultancy</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="col">
+              <label>CR / Trade License No.</label>
+              <input type="text" id="f-cr" placeholder="e.g. KW-123456" />
+            </div>
+          </div>
+          <div class="col">
+            <label>Website / Portfolio</label>
+            <input type="url" id="f-website" placeholder="https://…" />
+          </div>
+          <div class="col">
+            <label>Brief description of services</label>
+            <textarea id="f-vendor-notes" placeholder="Describe your services and what you're proposing…" rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VISITOR ── -->
+      <div data-section="visitor" id="sec-visitor">
+        <div class="card">
+          <div class="sec-title">Visit details</div>
+          <div class="row">
+            <div class="col">
+              <label>Host name / Meeting with</label>
+              <input type="text" id="f-host" placeholder="Person you're visiting" />
+            </div>
+            <div class="col">
+              <label>Visit date</label>
+              <input type="date" id="f-visitdate" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label>Purpose of visit</label>
+              <select id="f-purpose">
+                <option value="">Select…</option>
+                <option>Business meeting</option>
+                <option>Interview</option>
+                <option>Delivery / Courier</option>
+                <option>Maintenance visit</option>
+                <option>General enquiry</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="col">
+              <label>Vehicle plate (optional)</label>
+              <input type="text" id="f-plate" placeholder="e.g. 55 KWT" />
+            </div>
+          </div>
+          <div class="col">
+            <label>Civil ID / Passport No.</label>
+            <input type="text" id="f-idnum" placeholder="For security log" />
+            <div class="hint">Required for building access registration</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── EVENT / PHOTO SHOOT ── -->
+      <div data-section="event" id="sec-event">
+        <div class="card">
+          <div class="sec-title">Event / shoot details</div>
+          <div class="row">
+            <div class="col">
+              <label>Type of event <span class="req">*</span></label>
+              <select id="f-eventtype">
+                <option value="">Select…</option>
+                <option>Commercial Photography</option>
+                <option>Videography / Film</option>
+                <option>Architectural Photography</option>
+                <option>Corporate Event</option>
+                <option>Press / Media Visit</option>
+                <option>Product Launch</option>
+                <option>Wedding / Social Event</option>
+                <option>Documentary</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="col">
+              <label>Requested date <span class="req">*</span></label>
+              <input type="date" id="f-eventdate" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label>Start time</label>
+              <input type="time" id="f-starttime" />
+            </div>
+            <div class="col">
+              <label>Estimated duration</label>
+              <select id="f-duration">
+                <option value="">Select…</option>
+                <option>1–2 hours</option>
+                <option>Half day (3–4 hrs)</option>
+                <option>Full day</option>
+                <option>Multiple days</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <label>Team / crew size</label>
+              <input type="number" id="f-crew" min="1" max="200" placeholder="e.g. 5" />
+            </div>
+            <div class="col">
+              <label>Location within tower</label>
+              <select id="f-location">
+                <option value="">Select…</option>
+                <option>Tower exterior / façade</option>
+                <option>Lobby / atrium</option>
+                <option>Specific floor / unit</option>
+                <option>Rooftop</option>
+                <option>Car park</option>
+                <option>Entire tower</option>
+                <option>Outdoor / plaza</option>
+              </select>
+            </div>
+          </div>
+          <div class="col">
+            <label>Equipment to be brought</label>
+            <input type="text" id="f-equipment" placeholder="e.g. Camera, lighting rig, drone, steadicam…" />
+          </div>
+          <div class="col">
+            <label>Brief / Purpose <span class="req">*</span></label>
+            <textarea id="f-eventpurpose" placeholder="Describe the project, its purpose, and what you intend to capture or do on the premises…" rows="3"></textarea>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px;">
+              <input type="checkbox" id="f-permit" style="width:16px; height:16px; accent-color: var(--red);" />
+              Permit / NOC letter will be provided
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; margin-top:8px;">
+              <input type="checkbox" id="f-insurance" style="width:16px; height:16px; accent-color: var(--red);" />
+              Public liability insurance is in place
+            </label>
+          </div>
+
+          <div class="permit-box" style="margin-top:14px;">
+            <p><strong>📋 Note on approvals</strong>
+            All photo/film shoots require written approval from Al Hamra management. Submitting this form does not guarantee approval. Our Operations team will review your request within 2 business days and contact you with next steps. Drone operations require a separate Civil Aviation Authority permit.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── COMMON NOTES ── -->
+      <div class="card">
+        <div class="sec-title">Anything else?</div>
+        <div class="col">
+          <textarea id="f-notes" placeholder="Any additional information…" rows="2"></textarea>
+        </div>
+      </div>
+
+      <!-- Error msg -->
+      <div class="err-msg" id="err-msg"></div>
+
+      <!-- Submit -->
+      <button class="submit-btn" id="submit-btn" onclick="submitForm()">
+        Submit request
+      </button>
+
+      <div class="privacy">
+        🔒 Your information is handled securely and used only to process your request.
+        Al Hamra Real Estate · Kuwait
+      </div>
+    </div><!-- /common-fields -->
+
+  </div><!-- /form-wrap -->
+</div><!-- /wrap -->
+
+<script>
+const ENDPOINT = 'https://hvhggfieaykcrlqxumeh.supabase.co/functions/v1/intake-form';
+
+let currentType = null;
+let urgency = 'normal';
+
+function setType(type) {
+  currentType = type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + type)?.classList.add('active');
+  document.getElementById('common-fields').style.display = 'block';
+  document.querySelectorAll('[data-section]').forEach(s => s.classList.remove('visible'));
+  const sec = document.getElementById('sec-' + type);
+  if (sec) sec.classList.add('visible');
+  // Scroll to form
+  document.getElementById('common-fields').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function setUrgency(val) {
+  urgency = val;
+  document.getElementById('urg-normal').className = 'urg-btn' + (val === 'normal' ? ' sel-normal' : '');
+  document.getElementById('urg-urgent').className = 'urg-btn' + (val === 'urgent' ? ' sel-urgent' : '');
+}
+
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function checked(id) { const el = document.getElementById(id); return el ? el.checked : false; }
+
+async function submitForm() {
+  const errEl  = document.getElementById('err-msg');
+  const btnEl  = document.getElementById('submit-btn');
+  errEl.className = 'err-msg';
+
+  if (!currentType) { showErr('Please select an enquiry type above.'); return; }
+
+  const name  = val('f-name');
+  const phone = val('f-phone');
+  if (!name)  { showErr('Please enter your full name.'); return; }
+  if (!phone) { showErr('Please enter your phone number.'); return; }
+
+  // Type-specific required fields
+  if (currentType === 'leasing' && !val('f-subject')) { showErr('Please describe your request.'); return; }
+  if (currentType === 'vendor'  && !val('f-service')) { showErr('Please select your service type.'); return; }
+  if (currentType === 'event')  {
+    if (!val('f-eventtype')) { showErr('Please select the event type.'); return; }
+    if (!val('f-eventdate')) { showErr('Please select a requested date.'); return; }
+    if (!val('f-eventpurpose')) { showErr('Please provide a brief description.'); return; }
+  }
+
+  const payload = {
+    inquiry_type: currentType,
+    name, phone,
+    email:       val('f-email'),
+    job_title:   val('f-jobtitle'),
+    company_name: val('f-company'),
+    notes:       val('f-notes'),
+    urgency,
+    // Leasing
+    unit:            val('f-unit'),
+    floor:           val('f-floor'),
+    contract_number: val('f-contract'),
+    subject:         val('f-subject'),
+    // Prospect
+    unit_type:    val('f-unittype'),
+    preferred_area: val('f-area'),
+    budget:       val('f-budget'),
+    move_in_date: val('f-movein'),
+    // Vendor
+    service_type: val('f-service'),
+    cr_number:    val('f-cr'),
+    website:      val('f-website'),
+    // Visitor
+    host_name:    val('f-host'),
+    visit_date:   val('f-visitdate'),
+    purpose:      val('f-purpose') || val('f-eventpurpose'),
+    vehicle_plate: val('f-plate'),
+    id_number:    val('f-idnum'),
+    // Event
+    event_type:        val('f-eventtype'),
+    requested_date:    val('f-eventdate'),
+    start_time:        val('f-starttime'),
+    duration:          val('f-duration'),
+    crew_size:         val('f-crew'),
+    location_in_tower: val('f-location'),
+    equipment:         val('f-equipment'),
+    permit_needed:     checked('f-permit'),
+    has_insurance:     checked('f-insurance'),
+  };
+
+  btnEl.disabled = true;
+  btnEl.textContent = 'Submitting…';
+
+  try {
+    const res  = await fetch(ENDPOINT, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Submission failed');
+
+    document.getElementById('ref-display').textContent = data.reference;
+    document.getElementById('form-wrap').style.display = 'none';
+    document.getElementById('success').style.display   = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch (e) {
+    showErr('Sorry, something went wrong. Please try again or call us directly. (' + e.message + ')');
+    btnEl.disabled    = false;
+    btnEl.textContent = 'Submit request';
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('err-msg');
+  el.textContent = '⚠ ' + msg;
+  el.className   = 'err-msg show';
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function resetForm() {
+  document.getElementById('form-wrap').style.display = 'block';
+  document.getElementById('success').style.display   = 'none';
+  document.getElementById('common-fields').style.display = 'none';
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('input, textarea').forEach(el => { if (el.type !== 'checkbox') el.value = ''; el.checked = false; });
+  currentType = null; urgency = 'normal';
+  setUrgency('normal');
+}
+</script>
+</body>
+</html>
