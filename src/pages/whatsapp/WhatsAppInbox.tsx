@@ -95,6 +95,17 @@ const WhatsAppInbox = () => {
   const [activeConvo, setActiveConvo] = useState<WaConversation | null>(null);
   const [newConvOpen, setNewConvOpen] = useState(false);
 
+  const handleNewConvSuccess = useCallback((conversationId: string, _channelId: string, _chatId: string) => {
+    setNewConvOpen(false);
+    qc.invalidateQueries({ queryKey: ['wa_conversations'] });
+    // Find and activate the new conversation after refetch
+    setTimeout(() => {
+      qc.getQueryData<WaConversation[]>(['wa_conversations'])?.forEach(c => {
+        if (c.id === conversationId) setActiveConvo(c);
+      });
+    }, 500);
+  }, [qc]);
+
   // Load channels
   const { data: channels = [] } = useQuery<WaChannel[]>({
     queryKey: ['wa_channels'],
