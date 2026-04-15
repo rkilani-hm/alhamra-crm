@@ -383,8 +383,41 @@ const AdminSap = () => (
         SAP S/4HANA Integration
       </h1>
       <p className="text-muted-foreground text-sm mt-1">
-        Bidirectional sync with SAP Business Partners and RE-FX lease contracts
+        On-premise sync agent → Al Hamra CRM via Supabase REST API
       </p>
+    </div>
+
+    {/* On-premise architecture notice */}
+    <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <Info className="h-5 w-5 text-blue-600 shrink-0" />
+        <p className="text-sm font-semibold text-blue-900">On-premise SAP — agent-based sync</p>
+      </div>
+      <p className="text-sm text-blue-800">
+        Since SAP S/4HANA runs on your internal network, sync is handled by a lightweight Node.js agent
+        installed on any machine inside your company that can reach SAP.
+        The agent reads from SAP OData APIs and pushes to this CRM — all traffic is <strong>outbound only</strong>.
+        No firewall ports need to be opened.
+      </p>
+      <div className="grid grid-cols-3 gap-3 text-xs">
+        {[
+          { step: '1', label: 'Install Node.js', desc: 'On any PC with SAP access' },
+          { step: '2', label: 'Edit config.js', desc: 'SAP host, user, Supabase key' },
+          { step: '3', label: 'Schedule task', desc: 'Windows Task Scheduler — daily' },
+        ].map(({ step, label, desc }) => (
+          <div key={step} className="rounded-lg bg-blue-100 border border-blue-200 p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="h-5 w-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{step}</span>
+              <p className="font-semibold text-blue-900">{label}</p>
+            </div>
+            <p className="text-blue-700">{desc}</p>
+          </div>
+        ))}
+      </div>
+      <a href="/alhamra-sap-agent.zip" download
+        className="inline-flex items-center gap-2 bg-blue-600 text-white text-xs font-semibold rounded-lg px-4 py-2 hover:bg-blue-700 transition-colors mt-1">
+        <Download className="h-3.5 w-3.5" /> Download sync agent (alhamra-sap-agent.zip)
+      </a>
     </div>
 
     <ConnectionPanel />
