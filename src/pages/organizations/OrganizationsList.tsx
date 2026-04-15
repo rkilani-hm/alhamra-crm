@@ -131,11 +131,22 @@ const OrganizationsList = () => {
   const { data: orgs = [], isLoading } = useQuery<(Organization & { contact_count: number; case_count: number })[]>({
     queryKey: ['organizations'],
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('organizations')
-        .select('*, contacts(id)')
-        .order('name');
-      return (data ?? []).map((o: any) => ({
+      // Supabase default cap is 1000 rows — fetch all pages with range()
+      const PAGE = 1000;
+      let all: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await (supabase as any)
+          .from('organizations')
+          .select('*, contacts(id)')
+          .order('name')
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        all = all.concat(data ?? []);
+        if (!data || data.length < PAGE) break;
+        from += PAGE;
+      }
+      return all.map((o: any) => ({
         ...o,
         contact_count: o.contacts?.length ?? 0,
         case_count:    0,
@@ -159,7 +170,7 @@ const OrganizationsList = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-medium" style={{ fontFamily: 'Cormorant Garamond, serif' }}>Organizations</h1>
-          <p className="text-muted-foreground text-sm mt-1">{orgs.length} companies · full history per organization</p>
+          <p className="text-muted-foreground text-sm mt-1">{filtered.length !== orgs.length ? `${filtered.length} of ${orgs.length}` : orgs.length} organizations{orgs.length >= 1000 && filtered.length === orgs.length ? ' — all synced' : ''}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
