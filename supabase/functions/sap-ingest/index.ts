@@ -207,15 +207,69 @@ serve(async (req) => {
     const results = { total: records.length, ok: 0, errors: 0, details: [] as any[] };
     for (const rec of records) {
       try {
-        const subReq = new Request(req.url, {
-          method:  'POST',
-          headers: { 'content-type': 'application/json', 'x-sap-secret': secret },
-          body:    JSON.stringify(rec),
-        });
-        const subRes  = await serve.fetch ? serve.fetch(subReq) : new Response('{}');
-        const subData = await (subRes as any).json?.() ?? {};
-        if (subData.ok) results.ok++;
-        else { results.errors++; results.details.push({ ...rec.data, error: subData.error }); }
+        const { action: subAction, data: subData } = rec;
+        // Process each sub-record inline instead of recursive fetch
+        let subResult: any = { ok: false, error: `Unknown action: ${subAction}` };
+
+        if (subAction === 'upsert_organization' && subData?.sap_bp_number && subData?.name) {
+          const { data: existing } = await supabase
+            .from('organizations').select('id').eq('sap_bp_number', subData.sap_bp_number).maybeSingle();
+          const payload = {
+            name: subData.name, name_arabic: subData.name_arabic ?? null,
+            sap_bp_number: subData.sap_bp_number, phone: subData.phone ?? null,
+            email: subData.email ?? null, city: subData.city ?? null,
+            address: subData.address ?? null, type: subData.type ?? 'tenant',
+            sap_last_synced_at: new Date().toISOString(),
+          };
+          if (existing) {
+            await supabase.from('organizations').update(payload).eq('id', existing.id);
+          } else {
+            await supabase.from('organizations').insert(payload);
+          }
+          subResult = { ok: true };
+        } else if (subAction === 'upsert_lease' && subData?.sap_bp_number && subData?.contract_number) {
+          const { data: org } = await supabase
+            .from('organizations').select('id').eq('sap_bp_number', subData.sap_bp_number).maybeSingle();
+          if (org) {
+            await supabase.from('organizations').update({
+              lease_contract_number: subData.contract_number,
+              lease_rental_object: subData.rental_object ?? null,
+              lease_start_date: parseDate(subData.start_date),
+              lease_end_date: parseDate(subData.end_date),
+              lease_status: subData.status ? mapLeaseStatus(subData.status) : 'active',
+              sap_last_synced_at: new Date().toISOString(),
+            }).eq('id', org.id);
+            subResult = { ok: true };
+          } else {
+            subResult = { ok: false, error: `No org for BP ${subData.sap_bp_number}` };
+          }
+        } else if (subAction === 'upsert_contact' && subData?.name) {
+          let orgId: string | null = null;
+          if (subData.sap_bp_number) {
+            const { data: org } = await supabase
+              .from('organizations').select('id').eq('sap_bp_number', subData.sap_bp_number).maybeSingle();
+            orgId = org?.id ?? null;
+          }
+          if (subData.phone || subData.email) {
+            let existing: any = null;
+            if (subData.phone) {
+              const { data } = await supabase.from('contacts').select('id').eq('phone', subData.phone).maybeSingle();
+              existing = data;
+            }
+            const cp = {
+              name: subData.name, phone: subData.phone ?? null, email: subData.email ?? null,
+              organization_id: orgId, source: 'sap', client_type: subData.client_type ?? 'existing_tenant',
+            };
+            if (existing) await supabase.from('contacts').update(cp).eq('id', existing.id);
+            else await supabase.from('contacts').insert(cp);
+            subResult = { ok: true };
+          } else {
+            subResult = { ok: true, action: 'skipped' };
+          }
+        }
+
+        if (subResult.ok) results.ok++;
+        else { results.errors++; results.details.push({ ...subData, error: subResult.error }); }
       } catch (e: any) {
         results.errors++;
         results.details.push({ error: e.message });
@@ -230,7 +284,9 @@ serve(async (req) => {
   if (action === 'find_by') {
     const { table, col, val } = body.data ?? {};
     if (!table || !col || val === undefined) return json({ error: 'table, col, val required' }, 400);
-    const { data: row } = await supabase.from(table).select('id').eq(col, val).maybeSingle();
+    const allowedTables = ['organizations', 'contacts', 'cases'];
+    if (!allowedTables.includes(table)) return json({ error: 'table not allowed' }, 400);
+    const { data: row } = await supabase.from(table as 'organizations').select('id').eq(col, val).maybeSingle();
     return json({ ok: true, row });
   }
 
