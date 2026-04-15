@@ -43,7 +43,7 @@ const PRIORITIES = [
 const LeasingForm = ({ departments, categories, userId, onCreated }: Props) => {
   const [selected, setSelected] = useState<SelectedContact | null>(null);
 
-  const { register, handleSubmit, control, reset, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { priority: 'normal' },
   });
@@ -147,17 +147,17 @@ const LeasingForm = ({ departments, categories, userId, onCreated }: Props) => {
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact Details</p>
         <div className="space-y-1">
           <Label>Full name *</Label>
-          <Input {...register('name')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
+          <Input {...register('name')} readOnly={isLocked && !!watch('name')} className={cn(isLocked && !!watch('name') && 'bg-muted')} />
           {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>Phone</Label>
-            <Input {...register('phone')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
+            <Input {...register('phone')} readOnly={isLocked && !!watch('phone')} className={cn(isLocked && !!watch('phone') && 'bg-muted')} />
           </div>
           <div className="space-y-1">
             <Label>Email</Label>
-            <Input type="email" {...register('email')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
+            <Input type="email" {...register('email')} readOnly={isLocked && !!watch('email')} className={cn(isLocked && !!watch('email') && 'bg-muted')} />
           </div>
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -171,7 +171,7 @@ const LeasingForm = ({ departments, categories, userId, onCreated }: Props) => {
           </div>
           <div className="space-y-1">
             <Label>Contract #</Label>
-            <Input {...register('contract_number')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
+            <Input {...register('contract_number')} readOnly={isLocked && !!watch('contract_number')} className={cn(isLocked && !!watch('contract_number') && 'bg-muted')} />
           </div>
         </div>
       </div>

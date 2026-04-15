@@ -47,7 +47,7 @@ const VENDOR_TYPES = [
 const VendorForm = ({ departments, categories, userId, onCreated }: Props) => {
   const [selected, setSelected] = useState<SelectedContact | null>(null);
 
-  const { register, handleSubmit, control, reset, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { priority: 'normal' },
   });
@@ -152,23 +152,23 @@ const VendorForm = ({ departments, categories, userId, onCreated }: Props) => {
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Vendor Details</p>
         <div className="space-y-1">
           <Label>Company name *</Label>
-          <Input {...register('company_name')} readOnly={isLocked && selected?.type === 'organization'} className={cn(isLocked && selected?.type === 'organization' && 'bg-muted')} />
+          <Input {...register('company_name')} readOnly={isLocked && selected?.type === 'organization' && !!watch('company_name')} className={cn(isLocked && selected?.type === 'organization' && !!watch('company_name') && 'bg-muted')} />
           {errors.company_name && <p className="text-xs text-destructive">{errors.company_name.message}</p>}
         </div>
         <div className="space-y-1">
           <Label>Contact person *</Label>
-          <Input {...register('contact_person')} readOnly={isLocked && selected?.type === 'contact'} className={cn(isLocked && selected?.type === 'contact' && 'bg-muted')} />
+          <Input {...register('contact_person')} readOnly={isLocked && selected?.type === 'contact' && !!watch('contact_person')} className={cn(isLocked && selected?.type === 'contact' && !!watch('contact_person') && 'bg-muted')} />
           {errors.contact_person && <p className="text-xs text-destructive">{errors.contact_person.message}</p>}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>Phone *</Label>
-            <Input {...register('phone')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
+            <Input {...register('phone')} readOnly={isLocked && !!watch('phone')} className={cn(isLocked && !!watch('phone') && 'bg-muted')} />
             {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
           </div>
           <div className="space-y-1">
             <Label>Email</Label>
-            <Input type="email" {...register('email')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
+            <Input type="email" {...register('email')} readOnly={isLocked && !!watch('email')} className={cn(isLocked && !!watch('email') && 'bg-muted')} />
           </div>
         </div>
         <div className="space-y-1">

@@ -41,7 +41,7 @@ interface Props {
 const VisitorForm = ({ departments, categories, userId, onCreated }: Props) => {
   const [selected, setSelected] = useState<SelectedContact | null>(null);
 
-  const { register, handleSubmit, control, reset, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
@@ -134,13 +134,13 @@ const VisitorForm = ({ departments, categories, userId, onCreated }: Props) => {
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Visitor Details</p>
         <div className="space-y-1">
           <Label>Full name *</Label>
-          <Input {...register('name')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
+          <Input {...register('name')} readOnly={isLocked && !!watch('name')} className={cn(isLocked && !!watch('name') && 'bg-muted')} />
           {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>Phone</Label>
-            <Input {...register('phone')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
+            <Input {...register('phone')} readOnly={isLocked && !!watch('phone')} className={cn(isLocked && !!watch('phone') && 'bg-muted')} />
           </div>
           <div className="space-y-1">
             <Label>ID / Passport</Label>
@@ -150,7 +150,7 @@ const VisitorForm = ({ departments, categories, userId, onCreated }: Props) => {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>Company</Label>
-            <Input {...register('company')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
+            <Input {...register('company')} readOnly={isLocked && !!watch('company')} className={cn(isLocked && !!watch('company') && 'bg-muted')} />
           </div>
           <div className="space-y-1">
             <Label>Host / Meeting with</Label>
