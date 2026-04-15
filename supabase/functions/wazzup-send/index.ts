@@ -7,13 +7,17 @@ import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 function getCorsHeaders(origin: string | null) {
-  const allowed = [
+  const allowedOrigins = new Set([
     'https://alhamra-crm.lovable.app',
     'https://id-preview--ac11a577-7c5a-457e-a96f-591a93a399c0.lovable.app',
-  ];
+    'https://ac11a577-7c5a-457e-a96f-591a93a399c0.lovableproject.com',
+  ]);
+
   return {
-    'Access-Control-Allow-Origin':  (origin && allowed.includes(origin)) ? origin : allowed[0],
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Origin': origin && allowedOrigins.has(origin) ? origin : 'https://alhamra-crm.lovable.app',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
   };
 }
 // ── Verify caller is authenticated + has required role ───────
