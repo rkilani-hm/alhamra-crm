@@ -709,6 +709,42 @@ export type Database = {
           },
         ]
       }
+      sap_sync_log: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          entity_type: string | null
+          error_msg: string | null
+          id: string
+          notes: string | null
+          sap_id: string | null
+          status: string | null
+          sync_type: string
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          entity_type?: string | null
+          error_msg?: string | null
+          id?: string
+          notes?: string | null
+          sap_id?: string | null
+          status?: string | null
+          sync_type: string
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          entity_type?: string | null
+          error_msg?: string | null
+          id?: string
+          notes?: string | null
+          sap_id?: string | null
+          status?: string | null
+          sync_type?: string
+        }
+        Relationships: []
+      }
       wa_channels: {
         Row: {
           channel_id: string
