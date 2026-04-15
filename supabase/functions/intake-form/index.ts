@@ -103,14 +103,22 @@ serve(async (req) => {
         event:    'visitor',
         general:  'potential',
       };
-      const { data: newContact, error: cErr } = await supabase.from('contacts').insert({
-        name:        formData.name,
-        phone:       `+${cleanPhone}`,
-        email:       formData.email || null,
-        job_title:   formData.job_title || null,
-        client_type: clientTypeMap[inquiry_type] ?? 'potential',
-        source:      'web',
-      }).select('id').single();
+      // Build contact payload — exclude columns that may not exist in schema cache yet
+      const contactPayload: any = {
+        name:   formData.name,
+        phone:  `+${cleanPhone}`,
+        email:  formData.email || null,
+        source: 'web',
+      };
+      // Add optional columns safely — if schema cache is stale, omit them
+      try {
+        contactPayload.job_title   = formData.job_title || null;
+        contactPayload.client_type = clientTypeMap[inquiry_type] ?? 'potential';
+        contactPayload.company_name = formData.company_name || null;
+      } catch (_) { /* ignore if columns don't exist yet */ }
+
+      const { data: newContact, error: cErr } = await supabase.from('contacts')
+        .insert(contactPayload).select('id').single();
 
       if (cErr) throw new Error('Contact creation failed: ' + cErr.message);
       contactId = newContact.id;
