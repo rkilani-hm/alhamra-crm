@@ -356,41 +356,71 @@ export type Database = {
       contacts: {
         Row: {
           avatar_url: string | null
+          client_type: string | null
+          company_name: string | null
+          contract_number: string | null
           created_at: string | null
           email: string | null
+          floor: string | null
+          host_name: string | null
           id: string
+          id_number: string | null
           job_title: string | null
           linkedin_url: string | null
           name: string
           organization_id: string | null
           phone: string | null
+          sap_bp_number: string | null
           source: string | null
+          unit: string | null
+          vendor_type: string | null
+          visit_purpose: string | null
           wazzup_synced_at: string | null
         }
         Insert: {
           avatar_url?: string | null
+          client_type?: string | null
+          company_name?: string | null
+          contract_number?: string | null
           created_at?: string | null
           email?: string | null
+          floor?: string | null
+          host_name?: string | null
           id?: string
+          id_number?: string | null
           job_title?: string | null
           linkedin_url?: string | null
           name: string
           organization_id?: string | null
           phone?: string | null
+          sap_bp_number?: string | null
           source?: string | null
+          unit?: string | null
+          vendor_type?: string | null
+          visit_purpose?: string | null
           wazzup_synced_at?: string | null
         }
         Update: {
           avatar_url?: string | null
+          client_type?: string | null
+          company_name?: string | null
+          contract_number?: string | null
           created_at?: string | null
           email?: string | null
+          floor?: string | null
+          host_name?: string | null
           id?: string
+          id_number?: string | null
           job_title?: string | null
           linkedin_url?: string | null
           name?: string
           organization_id?: string | null
           phone?: string | null
+          sap_bp_number?: string | null
           source?: string | null
+          unit?: string | null
+          vendor_type?: string | null
+          visit_purpose?: string | null
           wazzup_synced_at?: string | null
         }
         Relationships: [
