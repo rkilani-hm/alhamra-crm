@@ -6,10 +6,16 @@
 import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const CORS = {
-  'Access-Control-Allow-Origin':  'https://alhamra-crm.lovable.app',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+function getCorsHeaders(origin: string | null) {
+  const allowed = [
+    'https://alhamra-crm.lovable.app',
+    'https://id-preview--ac11a577-7c5a-457e-a96f-591a93a399c0.lovable.app',
+  ];
+  return {
+    'Access-Control-Allow-Origin':  (origin && allowed.includes(origin)) ? origin : allowed[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 // ── Verify caller is authenticated + has required role ───────
 async function verifyCallerRole(req: Request, supabase: any, allowedRoles: string[]): Promise<{ ok: boolean; error?: string }> {
   const authHeader = req.headers.get('Authorization') ?? '';
