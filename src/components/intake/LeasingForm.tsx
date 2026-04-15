@@ -8,157 +8,137 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Search, Building2 } from 'lucide-react';
+import ContactSearchBar, { SelectedContact } from './ContactSearchBar';
 
 const schema = z.object({
-  phone: z.string().min(1, 'Phone is required'),
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email().optional().or(z.literal('')),
-  unit: z.string().optional(),
-  floor: z.string().optional(),
+  phone:           z.string().optional(),
+  name:            z.string().min(1, 'Name is required'),
+  email:           z.string().email().optional().or(z.literal('')),
+  unit:            z.string().optional(),
+  floor:           z.string().optional(),
   contract_number: z.string().optional(),
-  subject: z.string().min(1, 'Subject is required'),
-  department_id: z.string().min(1, 'Department is required'),
-  priority: z.enum(['low', 'normal', 'urgent']),
-  notes: z.string().optional(),
+  subject:         z.string().min(1, 'Subject is required'),
+  department_id:   z.string().min(1, 'Department is required'),
+  priority:        z.enum(['low', 'normal', 'urgent']),
+  notes:           z.string().optional(),
 });
-
 type FormData = z.infer<typeof schema>;
 
 interface Props {
   departments: Department[];
-  categories: CaseCategory[];
-  userId?: string;
-  onCreated: () => void;
+  categories:  CaseCategory[];
+  userId?:     string;
+  onCreated:   () => void;
 }
 
 const PRIORITIES = [
-  { value: 'low', label: 'Low' },
+  { value: 'low',    label: 'Low'    },
   { value: 'normal', label: 'Normal' },
   { value: 'urgent', label: 'Urgent' },
 ] as const;
 
 const LeasingForm = ({ departments, categories, userId, onCreated }: Props) => {
-  const [sapLoading, setSapLoading] = useState(false);
-  const [sapResult, setSapResult] = useState<any>(null);
-  const [clientType, setClientType] = useState<'existing' | 'potential' | null>(null);
+  const [selected, setSelected] = useState<SelectedContact | null>(null);
 
   const { register, handleSubmit, control, reset, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { priority: 'normal' },
   });
 
-  const searchSap = async (phone: string) => {
-    if (!phone) return;
-    setSapLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('sap-client-search', {
-        body: { phone },
-      });
-      if (error || !data?.found) {
-        setSapResult(null);
-        setClientType('potential');
-      } else {
-        setSapResult(data.client);
-        setClientType('existing');
-        setValue('name', data.client.name);
-        setValue('unit', data.client.unit);
-        setValue('floor', data.client.floor);
-        setValue('contract_number', data.client.contract_number);
-      }
-    } catch {
-      setSapResult(null);
-      setClientType('potential');
+  const handleSelect = (c: SelectedContact) => {
+    setSelected(c);
+    setValue('name',  c.name);
+    setValue('phone', c.phone ?? '');
+    setValue('email', c.email ?? '');
+    // Org-level lease data
+    if (c.type === 'organization') {
+      setValue('contract_number', c.contract_number ?? '');
     }
-    setSapLoading(false);
+  };
+
+  const handleClear = () => {
+    setSelected(null);
+    setValue('name',            '');
+    setValue('phone',           '');
+    setValue('email',           '');
+    setValue('unit',            '');
+    setValue('floor',           '');
+    setValue('contract_number', '');
   };
 
   const onSubmit = async (values: FormData) => {
     let contactId: string | undefined;
-    const { data: existing } = await supabase
-      .from('contacts')
-      .select('id')
-      .eq('phone', values.phone)
-      .maybeSingle();
-    contactId = existing?.id;
 
-    if (!contactId) {
-      const { data: newContact, error } = await supabase
-        .from('contacts')
-        .insert({ name: values.name, phone: values.phone, email: values.email || null, source: 'call' as const })
-        .select('id')
-        .single();
-      if (error) { toast.error('Failed to create contact'); return; }
-      contactId = newContact.id;
+    // Use selected contact directly if it's a contact record
+    if (selected?.type === 'contact') {
+      contactId = selected.id;
+    } else {
+      // Look up or create contact
+      if (values.phone) {
+        const { data: existing } = await supabase
+          .from('contacts').select('id').eq('phone', values.phone).maybeSingle();
+        contactId = existing?.id;
+      }
+      if (!contactId) {
+        const { data: nc, error } = await supabase
+          .from('contacts')
+          .insert({
+            name:   values.name,
+            phone:  values.phone || null,
+            email:  values.email  || null,
+            source: 'call' as const,
+            // Link to org if selected
+            ...(selected?.type === 'organization' ? { organization_id: selected.id } : {}),
+          })
+          .select('id').single();
+        if (error) { toast.error('Failed to create contact'); return; }
+        contactId = nc.id;
+      }
     }
 
     const dept = departments.find(d => d.id === values.department_id);
     const { error } = await supabase.from('cases').insert({
-      contact_id: contactId,
-      channel: 'call',
-      subject: values.subject,
-      priority: values.priority,
-      status: 'new',
+      contact_id:    contactId,
+      channel:       'call',
+      subject:       values.subject,
+      priority:      values.priority,
+      status:        'new',
       department_id: values.department_id,
-      created_by: userId,
-      notes: values.notes || null,
+      created_by:    userId,
+      inquiry_type:  'leasing',
+      notes:         values.notes || null,
     });
     if (error) { toast.error('Failed to create case'); return; }
 
     toast.success(`Case created and assigned to ${dept?.name}`);
     reset({ priority: 'normal' });
-    setSapResult(null);
-    setClientType(null);
+    setSelected(null);
     onCreated();
   };
 
+  const isLocked = selected !== null;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      {/* SAP Search */}
-      <div className="rounded-lg border bg-card p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Client Lookup</p>
-          {clientType && (
-            <Badge variant={clientType === 'existing' ? 'default' : 'secondary'}>
-              {clientType === 'existing' ? 'Existing tenant' : 'Potential client'}
-            </Badge>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <Input placeholder="+971 50 000 0000" {...register('phone')} />
-            {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone.message}</p>}
-          </div>
-          <Button type="button" variant="outline" className="gap-1.5" disabled={sapLoading} onClick={() => {
-            const phone = (document.querySelector('input[name="phone"]') as HTMLInputElement)?.value;
-            searchSap(phone);
-          }}>
-            <Search className="h-4 w-4" /> {sapLoading ? 'Searching…' : 'Search SAP'}
-          </Button>
-        </div>
 
-        {sapResult && (
-          <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Building2 className="h-4 w-4 text-brand-bronze" /> {sapResult.name}
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-              <span>Unit: {sapResult.unit}</span>
-              <span>Floor: {sapResult.floor}</span>
-              <span>Contract: {sapResult.contract_number}</span>
-              <span>Status: {sapResult.status}</span>
-            </div>
-          </div>
-        )}
-
-        {clientType === 'potential' && (
-          <div className="rounded-lg border-2 border-dashed border-muted p-3 text-center">
-            <p className="text-xs text-muted-foreground">No SAP record — registering as potential client</p>
-          </div>
+      {/* Global client search */}
+      <div className="rounded-lg border bg-card p-4 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Client Lookup
+        </p>
+        <ContactSearchBar
+          onSelect={handleSelect}
+          onClear={handleClear}
+          selected={selected}
+          placeholder="Search client by name, phone, email, SAP BP, Arabic name…"
+        />
+        {!selected && (
+          <p className="text-[11px] text-muted-foreground">
+            Search from CRM master data — contacts, tenants, vendors. Or fill in below to create new.
+          </p>
         )}
       </div>
 
@@ -167,27 +147,31 @@ const LeasingForm = ({ departments, categories, userId, onCreated }: Props) => {
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact Details</p>
         <div className="space-y-1">
           <Label>Full name *</Label>
-          <Input {...register('name')} readOnly={clientType === 'existing'} className={cn(clientType === 'existing' && 'bg-muted')} />
+          <Input {...register('name')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
           {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label>Email</Label>
-            <Input type="email" {...register('email')} />
+            <Label>Phone</Label>
+            <Input {...register('phone')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
           </div>
           <div className="space-y-1">
-            <Label>Unit</Label>
-            <Input {...register('unit')} readOnly={clientType === 'existing'} className={cn(clientType === 'existing' && 'bg-muted')} />
+            <Label>Email</Label>
+            <Input type="email" {...register('email')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1">
-            <Label>Floor</Label>
-            <Input {...register('floor')} readOnly={clientType === 'existing'} className={cn(clientType === 'existing' && 'bg-muted')} />
+            <Label>Unit</Label>
+            <Input {...register('unit')} />
           </div>
           <div className="space-y-1">
-            <Label>Contract number</Label>
-            <Input {...register('contract_number')} readOnly={clientType === 'existing'} className={cn(clientType === 'existing' && 'bg-muted')} />
+            <Label>Floor</Label>
+            <Input {...register('floor')} />
+          </div>
+          <div className="space-y-1">
+            <Label>Contract #</Label>
+            <Input {...register('contract_number')} readOnly={isLocked} className={cn(isLocked && 'bg-muted')} />
           </div>
         </div>
       </div>
