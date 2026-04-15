@@ -169,7 +169,16 @@ const ChatThread = ({ conversation }: Props) => {
       if (sendErr) throw sendErr;
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 120);
     } catch (e: any) {
-      toast.error('Send failed: ' + (e.message ?? 'Unknown error'));
+      const msg = e.message ?? 'Unknown error';
+      if (msg.includes('Failed to send') || msg.includes('non-2xx') || msg.includes('fetch')) {
+        toast.error('Cannot reach send service — the wazzup-send edge function needs to be redeployed in Lovable.', { duration: 8000 });
+      } else if (msg.includes('Rate limit')) {
+        toast.error('Too many messages sent — wait a minute and try again.');
+      } else if (msg.includes('WAZZUP_API_KEY')) {
+        toast.error('Wazzup API key not configured — contact your admin.');
+      } else {
+        toast.error('Send failed: ' + msg);
+      }
       setText(body);
     } finally {
       setSending(false);
