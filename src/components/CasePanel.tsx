@@ -151,6 +151,40 @@ const CasePanel = ({ caseItem, open, onClose, allowEdit = false }: Props) => {
           {allowEdit && (profile?.role === 'frontdesk' || profile?.role === 'manager') && (
             <div className="space-y-3 rounded-lg border p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Edit case</p>
+
+              {/* Status */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Status</label>
+                <Select
+                  value={caseItem.status}
+                  onValueChange={(v: any) => updateCase.mutate({ status: v })}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-500 inline-block" />
+                        New
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="inprogress">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-amber-500 inline-block" />
+                        In Progress
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="done">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
+                        Done
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">Re-assign department</label>
                 <Select
