@@ -568,6 +568,7 @@ export type Database = {
           owner_id: string | null
           phone: string | null
           sap_bp_number: string | null
+          sap_last_synced_at: string | null
           type: string
           updated_at: string | null
           website: string | null
@@ -593,6 +594,7 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           sap_bp_number?: string | null
+          sap_last_synced_at?: string | null
           type?: string
           updated_at?: string | null
           website?: string | null
@@ -618,6 +620,7 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           sap_bp_number?: string | null
+          sap_last_synced_at?: string | null
           type?: string
           updated_at?: string | null
           website?: string | null
@@ -705,6 +708,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sap_sync_log: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          entity_type: string | null
+          error_msg: string | null
+          id: string
+          notes: string | null
+          sap_id: string | null
+          status: string | null
+          sync_type: string
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          entity_type?: string | null
+          error_msg?: string | null
+          id?: string
+          notes?: string | null
+          sap_id?: string | null
+          status?: string | null
+          sync_type: string
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          entity_type?: string | null
+          error_msg?: string | null
+          id?: string
+          notes?: string | null
+          sap_id?: string | null
+          status?: string | null
+          sync_type?: string
+        }
+        Relationships: []
       }
       wa_channels: {
         Row: {
