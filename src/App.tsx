@@ -19,6 +19,7 @@ import AdminDepartments   from '@/pages/admin/AdminDepartments';
 import AdminCategories    from '@/pages/admin/AdminCategories';
 import AdminPermissions  from '@/pages/admin/AdminPermissions';
 import AdminIntake      from '@/pages/admin/AdminIntake';
+import AdminSap        from '@/pages/admin/AdminSap';
 import Dashboard       from '@/pages/Dashboard';
 import AdminKPI          from '@/pages/admin/AdminKPI';
 import NotFound           from '@/pages/NotFound';
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/admin/permissions"   element={<ProtectedRoute allowedRoles={['manager']}><AdminPermissions /></ProtectedRoute>} />
               <Route path="/admin/kpi"           element={<ProtectedRoute allowedRoles={['manager','frontdesk','department']}><AdminKPI /></ProtectedRoute>} />
               <Route path="/admin/intake"        element={<ProtectedRoute allowedRoles={['manager']}><AdminIntake /></ProtectedRoute>} />
+              <Route path="/admin/sap"           element={<ProtectedRoute allowedRoles={['manager']}><AdminSap /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
