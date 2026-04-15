@@ -112,6 +112,13 @@ export type Database = {
             foreignKeyName: "activities_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "lease_expiry_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -191,6 +198,51 @@ export type Database = {
           sort_order?: number | null
         }
         Relationships: []
+      }
+      case_history: {
+        Row: {
+          actor_id: string | null
+          case_id: string
+          changed_at: string | null
+          field: string
+          id: string
+          new_value: string
+          old_value: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          case_id: string
+          changed_at?: string | null
+          field: string
+          id?: string
+          new_value: string
+          old_value?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          case_id?: string
+          changed_at?: string | null
+          field?: string
+          id?: string
+          new_value?: string
+          old_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_history_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_history_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       case_notes: {
         Row: {
@@ -342,6 +394,13 @@ export type Database = {
           wazzup_synced_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contacts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "lease_expiry_alerts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contacts_organization_id_fkey"
             columns: ["organization_id"]
@@ -760,7 +819,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      lease_expiry_alerts: {
+        Row: {
+          alert_level: string | null
+          days_remaining: number | null
+          email: string | null
+          id: string | null
+          lease_contract_number: string | null
+          lease_end_date: string | null
+          lease_rental_object: string | null
+          lease_start_date: string | null
+          lease_status: string | null
+          name: string | null
+          name_arabic: string | null
+          phone: string | null
+          sap_bp_number: string | null
+        }
+        Insert: {
+          alert_level?: never
+          days_remaining?: never
+          email?: string | null
+          id?: string | null
+          lease_contract_number?: string | null
+          lease_end_date?: string | null
+          lease_rental_object?: string | null
+          lease_start_date?: string | null
+          lease_status?: string | null
+          name?: string | null
+          name_arabic?: string | null
+          phone?: string | null
+          sap_bp_number?: string | null
+        }
+        Update: {
+          alert_level?: never
+          days_remaining?: never
+          email?: string | null
+          id?: string | null
+          lease_contract_number?: string | null
+          lease_end_date?: string | null
+          lease_rental_object?: string | null
+          lease_start_date?: string | null
+          lease_status?: string | null
+          name?: string | null
+          name_arabic?: string | null
+          phone?: string | null
+          sap_bp_number?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_my_role: { Args: never; Returns: string }
