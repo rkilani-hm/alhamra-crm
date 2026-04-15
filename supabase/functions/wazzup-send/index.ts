@@ -53,6 +53,7 @@ function checkRateLimit(userId: string): { allowed: boolean; retryAfter?: number
 }
 
 serve(async (req) => {
+  const CORS = getCorsHeaders(req.headers.get('origin'));
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   // C6: Verify caller role
   const supabaseAdmin = createClient(
