@@ -17,7 +17,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.wazzup-send]
-verify_jwt = true
+verify_jwt = false
 
 [functions.wazzup-iframe]
 verify_jwt = true
