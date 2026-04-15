@@ -671,6 +671,41 @@ export type Database = {
           },
         ]
       }
+      quick_replies: {
+        Row: {
+          body: string
+          category: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_replies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wa_channels: {
         Row: {
           channel_id: string
