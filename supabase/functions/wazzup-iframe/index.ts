@@ -29,10 +29,34 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
-  const auth = await verifyCallerRole(req, supabaseAdmin, ['frontdesk', 'manager']);
-  if (!auth.ok) {
-    return new Response(JSON.stringify({ error: auth.error }), {
-      status: 403, headers: { 'Content-Type': 'application/json' },
+  // Verify caller has a valid JWT (authentication) — soft check for role
+  // The WhatsApp page is already role-gated by React Router, so we trust
+  // authenticated users accessing this function.
+  const authHeader = req.headers.get('Authorization') ?? '';
+  let callerUserId: string | null = null;
+  let callerName: string | null = null;
+  if (authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized — please log in again' }), {
+        status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
+      });
+    }
+    callerUserId = user.id;
+    // Get caller's name for the iFrame user context
+    const { data: profile } = await supabaseAdmin.from('profiles')
+      .select('full_name, role').eq('id', user.id).maybeSingle();
+    // Allow frontdesk and manager only (hard check)
+    if (!profile || !['frontdesk', 'manager'].includes(profile.role)) {
+      return new Response(JSON.stringify({ error: 'Access denied — insufficient role' }), {
+        status: 403, headers: { ...CORS, 'Content-Type': 'application/json' },
+      });
+    }
+    callerName = profile.full_name ?? 'CRM Agent';
+  } else {
+    return new Response(JSON.stringify({ error: 'Authorization header required' }), {
+      status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
 
@@ -47,22 +71,10 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { chatId, chatType = 'whatsapp', channelId, scope = 'global' } = body;
 
-    // Step 1: Get a valid Wazzup24 user ID
-    const usersRes = await fetch('https://api.wazzup24.com/v3/users', {
-      headers: { 'Authorization': `Bearer ${apiKey}` },
-    });
-
-    let wazzupUserId = 'crm-agent';
-    let wazzupUserName = 'CRM Agent';
-
-    if (usersRes.ok) {
-      const users = await usersRes.json();
-      const list = Array.isArray(users) ? users : (users.users ?? users.data ?? []);
-      if (list.length > 0) {
-        wazzupUserId  = list[0].id;
-        wazzupUserName = list[0].name ?? 'CRM Agent';
-      }
-    }
+    // Step 1: Use the authenticated CRM user's ID and name for the iFrame
+    // This scopes the Wazzup interface to show only their assigned chats
+    const wazzupUserId  = callerUserId ?? 'crm-agent';
+    const wazzupUserName = callerName ?? 'CRM Agent';
 
     // Step 2: Build payload
     // useDealsEvents: true makes WZ_CREATE_ENTITY fire when agent clicks "+"

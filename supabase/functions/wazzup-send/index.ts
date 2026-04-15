@@ -56,7 +56,7 @@ serve(async (req) => {
   const auth = await verifyCallerRole(req, supabaseAdmin, ['frontdesk', 'manager']);
   if (!auth.ok) {
     return new Response(JSON.stringify({ error: auth.error }), {
-      status: 403, headers: { 'Content-Type': 'application/json' },
+      status: 403, headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
 
