@@ -568,6 +568,7 @@ export type Database = {
           owner_id: string | null
           phone: string | null
           sap_bp_number: string | null
+          sap_last_synced_at: string | null
           type: string
           updated_at: string | null
           website: string | null
@@ -593,6 +594,7 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           sap_bp_number?: string | null
+          sap_last_synced_at?: string | null
           type?: string
           updated_at?: string | null
           website?: string | null
@@ -618,6 +620,7 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           sap_bp_number?: string | null
+          sap_last_synced_at?: string | null
           type?: string
           updated_at?: string | null
           website?: string | null
