@@ -285,6 +285,7 @@ export type Database = {
       }
       cases: {
         Row: {
+          category_id: string | null
           channel: string | null
           contact_id: string | null
           created_at: string | null
@@ -300,6 +301,7 @@ export type Database = {
           wazzup_deal_id: string | null
         }
         Insert: {
+          category_id?: string | null
           channel?: string | null
           contact_id?: string | null
           created_at?: string | null
@@ -315,6 +317,7 @@ export type Database = {
           wazzup_deal_id?: string | null
         }
         Update: {
+          category_id?: string | null
           channel?: string | null
           contact_id?: string | null
           created_at?: string | null
@@ -330,6 +333,13 @@ export type Database = {
           wazzup_deal_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cases_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "case_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cases_contact_id_fkey"
             columns: ["contact_id"]
