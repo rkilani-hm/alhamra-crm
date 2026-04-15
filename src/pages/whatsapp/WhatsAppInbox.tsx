@@ -8,80 +8,13 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import ContactPanel from './ContactPanel';
+import ChatThread from './ChatThread';
 import NewConversationModal from './NewConversationModal';
 
 const AH = { RED: '#CD1719', DARK: '#1D1D1B', GRAY: '#B2B2B2', LIGHT: '#EDEDED' };
 
 // ── Global Wazzup24 iFrame ────────────────────────────────────
-const WazzupIFrame = ({
-  onCreateEntity,
-}: {
-  onCreateEntity: (chatId: string, channelId: string) => void;
-}) => {
-  const [url, setUrl]       = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase.functions.invoke('wazzup-iframe', { body: { scope: 'global' } })
-      .then(({ data, error: e }) => {
-        if (e || data?.error) setError(e?.message ?? data?.error ?? 'Failed to load');
-        else if (data?.url) setUrl(data.url);
-        setLoading(false);
-      });
-  }, []);
-
-  // Listen for WZ_CREATE_ENTITY — fires when agent clicks "+" (create case/deal)
-  // Requires options.useDealsEvents:true in the iFrame payload (set in edge function)
-  useEffect(() => {
-    const handler = (event: MessageEvent) => {
-      try {
-        const d = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        // Log every message for debugging
-        // postMessage events intentionally not logged (H4: PII prevention)
-
-        if (
-          (d?.type === 'WZ_CREATE_ENTITY' || d?.type === 'WZ_OPEN_ENTITY') &&
-          d?.data?.chatId && d?.data?.channelId
-        ) {
-          onCreateEntity(d.data.chatId, d.data.channelId);
-        }
-      } catch { /* ignore */ }
-    };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, [onCreateEntity]);
-
-  if (loading) return (
-    <div className="flex flex-1 items-center justify-center gap-3">
-      <div className="h-5 w-5 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
-      <span className="text-sm text-muted-foreground">Loading Wazzup24…</span>
-    </div>
-  );
-
-  if (error) return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-      <div className="rounded-lg border border-red-200 bg-red-50 p-5 max-w-sm text-sm space-y-2">
-        <p className="font-semibold text-red-700">Could not load Wazzup24</p>
-        <p className="text-xs text-red-600">{error}</p>
-        <p className="text-xs text-muted-foreground">
-          Make sure WAZZUP_API_KEY is set and the edge function is deployed.
-        </p>
-      </div>
-    </div>
-  );
-
-  return (
-    <iframe
-      src={url!}
-      className="flex-1 border-0 w-full h-full"
-      allow="microphone"
-      title="Wazzup24 — All conversations"
-    />
-  );
-};
-
-// ── Conversation row ──────────────────────────────────────────
 const ConvoRow = ({
   convo, active, onClick,
 }: {
@@ -203,27 +136,7 @@ const WhatsAppInbox = () => {
   }, [conversations]);
 
   // When agent clicks "+" in Wazzup iFrame (WZ_CREATE_ENTITY event)
-  const handleCreateEntity = useCallback(async (chatId: string, channelId: string) => {
-    const existing = conversations.find(c => c.chat_id === chatId && c.channel_id === channelId);
-    if (existing) { setActiveConvo(existing); return; }
 
-    const { data } = await (supabase as any)
-      .from('wa_conversations')
-      .upsert({ channel_id: channelId, chat_id: chatId }, { onConflict: 'channel_id,chat_id' })
-      .select('*, contacts(id,name,phone,email), wa_channels(phone,label)')
-      .maybeSingle();
-
-    if (data) {
-      qc.invalidateQueries({ queryKey: ['wa_conversations_inbox'] });
-      setActiveConvo(data as WaConversation);
-    }
-  }, [conversations, qc]);
-
-  // Sync channels
-  // Handle successful new conversation — open it in the inbox
-  const handleNewConvSuccess = async (conversationId: string, _channelId: string, _chatId: string) => {
-    qc.invalidateQueries({ queryKey: ['wa_conversations_inbox'] });
-  };
 
   // Push CRM contacts TO Wazzup (bidirectional sync)
   const pushContacts = useMutation({
@@ -378,9 +291,34 @@ const WhatsAppInbox = () => {
         </div>
       </div>
 
-      {/* ── Center — Wazzup24 iFrame ──────────────────────────── */}
+      {/* ── Center — Native chat thread ───────────────────────── */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <WazzupIFrame onCreateEntity={handleCreateEntity} />
+        {activeConvo ? (
+          <ChatThread conversation={activeConvo} />
+        ) : (
+          <div style={{
+            flex: 1, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            gap: 12, padding: 24, textAlign: 'center',
+            background: 'hsl(40 18% 97%)',
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 14,
+              background: '#25D36615', border: '1.5px solid #25D36630',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <MessageSquare style={{ width: 26, height: 26, color: '#25D366' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: AH.DARK, letterSpacing: '0.04em' }}>
+                Select a conversation
+              </p>
+              <p style={{ fontSize: 11, color: AH.GRAY, marginTop: 6, lineHeight: 1.6 }}>
+                Choose a chat from the left to read and reply to messages.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Right — Contact & Case panel ─────────────────────── */}
