@@ -162,15 +162,25 @@ const Tasks = () => {
     queryKey: ['tasks', profile?.department_id, profile?.role],
     refetchInterval: 30_000,
     queryFn: async (): Promise<Case[]> => {
-      let query = (supabase as any)
-        .from('cases')
-        .select('*, contacts(*), departments(*), profiles:created_by(full_name)')
-        .order('due_at', { ascending: true, nullsFirst: false })
-        .order('created_at', { ascending: false });
-      if (profile?.role === 'department' && profile.department_id)
-        query = query.eq('department_id', profile.department_id);
-      const { data } = await query;
-      return data ?? [];
+      const PAGE = 1000;
+      let all: any[] = [];
+      let from = 0;
+      while (true) {
+        let query = (supabase as any)
+          .from('cases')
+          .select('*, contacts(*), departments(*), profiles:created_by(full_name)')
+          .order('due_at', { ascending: true, nullsFirst: false })
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (profile?.role === 'department' && profile.department_id)
+          query = query.eq('department_id', profile.department_id);
+        const { data, error } = await query;
+        if (error) break;
+        all = all.concat(data ?? []);
+        if (!data || data.length < PAGE) break;
+        from += PAGE;
+      }
+      return all;
     },
   });
 

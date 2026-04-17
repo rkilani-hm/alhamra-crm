@@ -63,11 +63,22 @@ const FollowUp = () => {
     queryKey: ['cases'],
     refetchInterval: 30_000,
     queryFn: async (): Promise<Case[]> => {
-      const { data } = await (supabase as any)
-        .from('cases')
-        .select('*, contacts(*), departments(*), profiles:created_by(full_name)')
-        .order('created_at', { ascending: false });
-      return (data ?? []) as Case[];
+      // Paginate past Supabase 1000-row default cap
+      const PAGE = 1000;
+      let all: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await (supabase as any)
+          .from('cases')
+          .select('*, contacts(*), departments(*), profiles:created_by(full_name)')
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        all = all.concat(data ?? []);
+        if (!data || data.length < PAGE) break;
+        from += PAGE;
+      }
+      return all as Case[];
     },
   });
 
@@ -75,6 +86,28 @@ const FollowUp = () => {
     queryKey: ['departments'],
     queryFn: async () => { const { data } = await supabase.from('departments').select('*').order('name'); return data ?? []; },
   });
+
+  const { data: slaConfig = [] } = useQuery({
+    queryKey: ['sla-config'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sla_config').select('*');
+      return data ?? [];
+    },
+  });
+
+  // Build SLA map: inquiry_type → { target_hours, warning_hours }
+  const slaMap = Object.fromEntries(
+    slaConfig.map((s: any) => [s.inquiry_type, s])
+  );
+
+  const getSlaStatus = (c: Case): 'breach' | 'warning' | 'ok' => {
+    if (c.status === 'done') return 'ok';
+    const sla = slaMap[c.inquiry_type ?? 'general'] ?? { target_hours: 24, warning_hours: 20 };
+    const ageH = (Date.now() - new Date(c.created_at).getTime()) / 3_600_000;
+    if (ageH >= sla.target_hours)  return 'breach';
+    if (ageH >= sla.warning_hours) return 'warning';
+    return 'ok';
+  };
 
   const isOverdue = (c: Case) => c.due_at && isPast(new Date(c.due_at)) && c.status !== 'done';
 

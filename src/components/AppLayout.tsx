@@ -84,6 +84,7 @@ const SECTIONS: { section: string; roles: NavRole[]; items: NavItem[] }[] = [
       { to: '/admin/permissions', label: 'Authorities',  icon: Shield,          roles: ['manager']           },
       { to: '/admin/intake',      label: 'Web Intake',   icon: Globe,           roles: ['manager']           },
       { to: '/admin/sap',        label: 'SAP Sync',     icon: Database,        roles: ['manager']           },
+      { to: '/admin/sla',        label: 'SLA Config',   icon: Timer,           roles: ['manager']           },
       { to: '/admin/kpi',         label: 'KPI Targets',  icon: Target,          roles: ['manager']           },
     ],
   },

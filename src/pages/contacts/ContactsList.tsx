@@ -130,8 +130,18 @@ const ContactsList = () => {
   const { data: contacts = [], isLoading } = useQuery<ContactWithOrg[]>({
     queryKey: ['contacts'],
     queryFn: async () => {
-      const { data: contactData } = await (supabase as any)
-        .from('contacts').select('*').order('name');
+      // Paginate past Supabase 1000-row default cap
+      const PAGE = 1000;
+      let contactData: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await (supabase as any)
+          .from('contacts').select('*').order('name').range(from, from + PAGE - 1);
+        if (error) break;
+        contactData = contactData.concat(data ?? []);
+        if (!data || data.length < PAGE) break;
+        from += PAGE;
+      }
       if (!contactData?.length) return [];
       const orgIds = [...new Set(contactData.map((c: any) => c.organization_id).filter(Boolean))];
       let orgMap: Record<string, { id: string; name: string }> = {};
@@ -161,7 +171,7 @@ const ContactsList = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-medium" style={{ fontFamily: 'Cormorant Garamond, serif' }}>Contacts</h1>
-          <p className="text-muted-foreground text-sm mt-1">{contacts.length} people · link to organizations for full history</p>
+          <p className="text-muted-foreground text-sm mt-1">{filtered.length !== contacts.length ? `${filtered.length} of ${contacts.length}` : contacts.length} contacts</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">

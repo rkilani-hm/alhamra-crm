@@ -69,6 +69,8 @@ const Dashboard = () => {
         (supabase as any).from('cases').select('id', { count: 'exact', head: true }).neq('status','done'),
         (supabase as any).from('cases').select('id', { count: 'exact', head: true }).eq('priority','urgent').neq('status','done'),
         (supabase as any).from('cases').select('id', { count: 'exact', head: true }).eq('status','done').gte('created_at', today.toISOString()),
+        // SLA breached: open cases older than 24h (simple default — AdminSla page configures per type)
+        (supabase as any).from('cases').select('id', { count: 'exact', head: true }).neq('status','done').lt('created_at', new Date(Date.now() - 24*3600*1000).toISOString()),
         (supabase as any).from('wa_conversations').select('unread_count').gt('unread_count', 0),
       ]);
       return {
