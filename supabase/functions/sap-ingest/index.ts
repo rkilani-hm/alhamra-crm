@@ -286,7 +286,7 @@ serve(async (req) => {
     if (!table || !col || val === undefined) return json({ error: 'table, col, val required' }, 400);
     const allowedTables = ['organizations', 'contacts', 'cases'];
     if (!allowedTables.includes(table)) return json({ error: 'table not allowed' }, 400);
-    const { data: row } = await supabase.from(table as 'organizations').select('id').eq(col, val).maybeSingle();
+    const { data: row } = await (supabase as any).from(table).select('id').eq(col, val).maybeSingle();
     return json({ ok: true, row });
   }
 
