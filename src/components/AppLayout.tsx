@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   PhoneIncoming, ClipboardList, CheckSquare, LogOut, Layers,
   LayoutDashboard, Users, Building2, Tag, Shield, Target, Globe, Database,
-  ChevronLeft, ChevronRight, MessageSquare, BarChart2, Calendar,
+  ChevronLeft, ChevronRight, MessageSquare, BarChart2, Calendar, Timer,
 } from 'lucide-react';
 
 /* ─── Official Al Hamra brand tokens ──────────────────────── */
