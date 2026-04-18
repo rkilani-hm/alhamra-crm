@@ -745,6 +745,44 @@ export type Database = {
         }
         Relationships: []
       }
+      sla_config: {
+        Row: {
+          id: string
+          inquiry_type: string
+          is_active: boolean
+          target_hours: number
+          updated_at: string | null
+          updated_by: string | null
+          warning_hours: number
+        }
+        Insert: {
+          id?: string
+          inquiry_type: string
+          is_active?: boolean
+          target_hours?: number
+          updated_at?: string | null
+          updated_by?: string | null
+          warning_hours?: number
+        }
+        Update: {
+          id?: string
+          inquiry_type?: string
+          is_active?: boolean
+          target_hours?: number
+          updated_at?: string | null
+          updated_by?: string | null
+          warning_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wa_channels: {
         Row: {
           channel_id: string
