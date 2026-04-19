@@ -209,6 +209,7 @@ const ChatThread = ({ conversation }: Props) => {
           <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
             WhatsApp · +{conversation.chat_id}
+            {channelLabel && <span className="text-muted-foreground/70">· via {channelLabel}</span>}
           </p>
         </div>
         <button onClick={() => refetch()} title="Refresh messages"
