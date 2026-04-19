@@ -521,12 +521,32 @@ function renderFileList() {
     const isImg = type.startsWith('image/');
     const icon  = isImg ? '🖼' : '📄';
     const sizeStr = size < 1048576 ? (size / 1024).toFixed(0) + ' KB' : (size / 1048576).toFixed(1) + ' MB';
+
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f5f4f2;border-radius:8px;padding:7px 10px;font-size:12px;color:#444;';
-    row.innerHTML = '<span style="font-size:16px">' + icon + '</span>'
-      + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>'
-      + '<span style="color:#999;flex-shrink:0">' + sizeStr + '</span>'
-      + '<button onclick="removeFile('' + name.replace(/'/g,"\'") + '')" style="background:none;border:none;cursor:pointer;color:#CD1719;font-size:16px;line-height:1;padding:0">×</button>';
+
+    const iconEl = document.createElement('span');
+    iconEl.style.fontSize = '16px';
+    iconEl.textContent = icon;
+
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    nameEl.textContent = name;
+
+    const sizeEl = document.createElement('span');
+    sizeEl.style.cssText = 'color:#999;flex-shrink:0';
+    sizeEl.textContent = sizeStr;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = 'background:none;border:none;cursor:pointer;color:#CD1719;font-size:16px;line-height:1;padding:0';
+    btn.textContent = '×';
+    btn.addEventListener('click', () => removeFile(name));
+
+    row.appendChild(iconEl);
+    row.appendChild(nameEl);
+    row.appendChild(sizeEl);
+    row.appendChild(btn);
     container.appendChild(row);
   });
   const dz = document.getElementById('dz-label');
