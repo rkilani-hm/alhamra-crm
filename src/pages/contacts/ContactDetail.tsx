@@ -322,6 +322,22 @@ const ContactDetail = () => {
               {activities.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground">No activities yet</div>}
             </div>
           )}
+
+          {tab === 'whatsapp' && (
+            <div className="space-y-4">
+              {contact.phone ? (
+                <WazzupChatPanel
+                  chatId={contact.phone.replace(/\D/g, '')}
+                  contactName={contact.name}
+                  height={520}
+                />
+              ) : (
+                <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+                  No phone number on this contact — add one to view WhatsApp history
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
       <LogActivityModal open={logOpen} onClose={() => setLogOpen(false)} contactId={id} />
