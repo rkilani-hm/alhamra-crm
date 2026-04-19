@@ -244,11 +244,11 @@ serve(async (req) => {
         case_id:   newCase.id,
         file_name: a.name,
         file_url:  a.url,
-        file_type: a.type,
-        file_size: a.size,
-        source:    'web_intake',
+        mime_type: a.type ?? null,
+        file_size: a.size ?? null,
       }));
-      await supabase.from('case_attachments').insert(attachRows);
+      const { error: attErr } = await supabase.from('case_attachments').insert(attachRows);
+      if (attErr) console.error('Attachment insert failed:', attErr.message);
     }
 
     // Notification for assigned dept users
