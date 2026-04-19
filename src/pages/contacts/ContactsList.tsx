@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { Users, Plus, Search, Phone, Mail, Building2, ChevronRight, MessageSquare, FileSpreadsheet } from 'lucide-react';
 import ImportModal from '@/components/crm/ImportModal';
+import OrgCombobox from '@/components/crm/OrgCombobox';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -80,13 +81,12 @@ const NewContactModal = ({ open, onClose, defaultOrgId }: { open: boolean; onClo
           <div><Label className="text-xs">Job title</Label>
             <Input value={form.job_title} onChange={f('job_title')} placeholder="FM Manager, CEO…" className="h-9 mt-1 text-xs" /></div>
           <div><Label className="text-xs">Organization</Label>
-            <Select value={form.organization_id || '__none__'} onValueChange={v => setForm(p => ({ ...p, organization_id: v === '__none__' ? '' : v }))}>
-              <SelectTrigger className="h-9 mt-1 text-xs"><SelectValue placeholder="None" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">None</SelectItem>
-                {orgs.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <OrgCombobox
+              orgs={orgs}
+              value={form.organization_id}
+              onChange={v => setForm(p => ({ ...p, organization_id: v }))}
+              className="mt-1"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label className="text-xs">Source</Label>

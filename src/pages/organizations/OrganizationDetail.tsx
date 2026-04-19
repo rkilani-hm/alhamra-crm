@@ -18,7 +18,7 @@ import ImageUploader from '@/components/crm/ImageUploader';
 import WaThreadPreview from '@/components/crm/WaThreadPreview';
 import {
   Building2, Phone, Mail, Globe, MapPin, Edit2, Save, X,
-  Plus, ChevronLeft, Users, Briefcase, Clock, FileText,
+  Plus, ChevronLeft, Users, Briefcase, Clock, FileText, Search, UserPlus, Link2,
   LayoutList, CheckCircle2, Circle, FileKey, CalendarRange, Hash, Activity as ActivityIcon2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -114,8 +114,12 @@ const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const nav    = useNavigate();
   const qc     = useQueryClient();
-  const [tab, setTab]       = useState<Tab>('timeline');
-  const [editing, setEditing] = useState(false);
+  const [tab, setTab]         = useState<Tab>('timeline');
+  const [editing, setEditing]   = useState(false);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [memberQuery,   setMemberQuery]   = useState('');
+  const [newMemberForm, setNewMemberForm] = useState({ name:'', phone:'', email:'', job_title:'' });
+  const [memberMode,    setMemberMode]    = useState<'search'|'create'>('search');
   const [logOpen, setLogOpen] = useState(false);
   const [editForm, setEditForm] = useState<Partial<Organization>>({});
 
@@ -140,6 +144,61 @@ const OrganizationDetail = () => {
         .from('contacts').select('*').eq('organization_id', id).order('name');
       return data ?? [];
     },
+  });
+
+  // Search for existing contacts to link (not already in this org)
+  const { data: searchResults = [] } = useQuery<Contact[]>({
+    queryKey: ['contact-search-link', memberQuery],
+    enabled:  memberQuery.trim().length >= 2,
+    queryFn: async () => {
+      const like = `%${memberQuery}%`;
+      const { data } = await (supabase as any)
+        .from('contacts')
+        .select('id,name,phone,email,job_title,organization_id')
+        .or(`name.ilike.${like},phone.ilike.${like},email.ilike.${like}`)
+        .neq('organization_id', id)          // exclude already-linked contacts
+        .limit(8);
+      return data ?? [];
+    },
+  });
+
+  const linkContact = useMutation({
+    mutationFn: async (contactId: string) => {
+      const { error } = await (supabase as any)
+        .from('contacts').update({ organization_id: id }).eq('id', contactId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['org-contacts', id] });
+      toast.success('Contact linked to organization');
+      setMemberQuery('');
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const createAndLinkContact = useMutation({
+    mutationFn: async () => {
+      if (!newMemberForm.name.trim()) throw new Error('Name is required');
+      const { data, error } = await (supabase as any).from('contacts').insert({
+        name:            newMemberForm.name.trim(),
+        phone:           newMemberForm.phone  || null,
+        email:           newMemberForm.email  || null,
+        job_title:       newMemberForm.job_title || null,
+        organization_id: id,
+        source:          'call',
+        client_type:     'potential',
+      }).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['org-contacts', id] });
+      toast.success('Contact created and linked');
+      setNewMemberForm({ name:'', phone:'', email:'', job_title:'' });
+      setAddMemberOpen(false);
+      setMemberMode('search');
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   // Load cases for all contacts in this org
@@ -488,10 +547,112 @@ const OrganizationDetail = () => {
             <div className="space-y-2">
               <div className="flex justify-between items-center mb-3">
                 <p className="text-sm text-muted-foreground">{contacts.length} people linked to this organization</p>
-                <Button size="sm" variant="outline" onClick={() => nav('/contacts/new?org=' + id)}>
-                  <Plus className="h-3.5 w-3.5 mr-1.5" /> Add contact
+                <Button size="sm" variant="outline" onClick={() => { setAddMemberOpen(true); setMemberMode('search'); setMemberQuery(''); }}>
+                  <Plus className="h-3.5 w-3.5 mr-1.5" /> Add member
                 </Button>
               </div>
+
+              {/* ── Inline add-member panel ───────────────── */}
+              {addMemberOpen && (
+                <div className="rounded-xl border bg-card shadow-sm mb-4 overflow-hidden">
+                  {/* Header tabs */}
+                  <div className="flex border-b">
+                    <button onClick={() => setMemberMode('search')}
+                      className={cn('flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors',
+                        memberMode === 'search' ? 'bg-primary/8 text-primary border-b-2 border-primary' : 'text-muted-foreground hover:bg-muted/30')}>
+                      <Search className="h-3.5 w-3.5" /> Link existing contact
+                    </button>
+                    <button onClick={() => setMemberMode('create')}
+                      className={cn('flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors',
+                        memberMode === 'create' ? 'bg-primary/8 text-primary border-b-2 border-primary' : 'text-muted-foreground hover:bg-muted/30')}>
+                      <UserPlus className="h-3.5 w-3.5" /> Create new contact
+                    </button>
+                    <button onClick={() => { setAddMemberOpen(false); setMemberQuery(''); }}
+                      className="px-3 text-muted-foreground hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Search mode */}
+                  {memberMode === 'search' && (
+                    <div className="p-3 space-y-2">
+                      <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 focus-within:border-primary transition-colors">
+                        <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <input value={memberQuery} onChange={e => setMemberQuery(e.target.value)}
+                          placeholder="Search by name, phone or email…"
+                          className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground/50"
+                          autoFocus />
+                        {memberQuery && <button onClick={() => setMemberQuery('')}><X className="h-3 w-3 text-muted-foreground" /></button>}
+                      </div>
+                      {memberQuery.trim().length >= 2 && (
+                        <div className="space-y-1">
+                          {searchResults.length === 0 && (
+                            <p className="text-xs text-center text-muted-foreground py-3">
+                              No contacts found — try a different name or <button className="text-primary underline" onClick={() => setMemberMode('create')}>create new</button>
+                            </p>
+                          )}
+                          {searchResults.map(r => (
+                            <div key={r.id} className="flex items-center gap-3 rounded-lg border px-3 py-2.5 hover:bg-muted/20 transition-colors">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-semibold text-xs">
+                                {r.name.slice(0,2).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{r.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {[r.phone, r.email, (r as any).job_title].filter(Boolean).join(' · ')}
+                                </p>
+                              </div>
+                              <Button size="sm" variant="outline" className="shrink-0 gap-1 h-7 px-2 text-xs"
+                                disabled={linkContact.isPending}
+                                onClick={() => linkContact.mutate(r.id)}>
+                                <Plus className="h-3 w-3" /> Add
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {memberQuery.trim().length < 2 && (
+                        <p className="text-xs text-center text-muted-foreground py-2">Type at least 2 characters to search</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Create mode */}
+                  {memberMode === 'create' && (
+                    <div className="p-3 space-y-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">Full name *</label>
+                        <Input value={newMemberForm.name} onChange={e => setNewMemberForm(p => ({ ...p, name: e.target.value }))}
+                          placeholder="Mohammed Al-Rashid" className="h-8 text-xs" autoFocus />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Phone</label>
+                          <Input value={newMemberForm.phone} onChange={e => setNewMemberForm(p => ({ ...p, phone: e.target.value }))}
+                            placeholder="+965 9XXX XXXX" className="h-8 text-xs" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium">Email</label>
+                          <Input value={newMemberForm.email} onChange={e => setNewMemberForm(p => ({ ...p, email: e.target.value }))}
+                            placeholder="m@company.com" className="h-8 text-xs" />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">Job title</label>
+                        <Input value={newMemberForm.job_title} onChange={e => setNewMemberForm(p => ({ ...p, job_title: e.target.value }))}
+                          placeholder="FM Manager, CEO…" className="h-8 text-xs" />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setMemberMode('search')}>Back to search</Button>
+                        <Button size="sm" className="h-7 text-xs" disabled={!newMemberForm.name.trim() || createAndLinkContact.isPending}
+                          onClick={() => createAndLinkContact.mutate()}>
+                          {createAndLinkContact.isPending ? 'Creating…' : 'Create & link'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {contacts.map(c => (
                 <div key={c.id} onClick={() => nav(`/contacts/${c.id}`)}
                   className="flex items-center gap-3 rounded-lg border bg-card p-3 cursor-pointer hover:bg-muted/30 transition-colors">
