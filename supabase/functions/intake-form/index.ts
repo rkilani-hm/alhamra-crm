@@ -237,6 +237,20 @@ serve(async (req) => {
       .eq('form_data->>phone', formData.phone)
       .order('created_at', { ascending: false }).limit(1);
 
+    // ── 7. Save attachments as case_attachments ─────────────
+    const attachments: any[] = formData.attachments ?? [];
+    if (attachments.length) {
+      const attachRows = attachments.map((a: any) => ({
+        case_id:   newCase.id,
+        file_name: a.name,
+        file_url:  a.url,
+        file_type: a.type,
+        file_size: a.size,
+        source:    'web_intake',
+      }));
+      await supabase.from('case_attachments').insert(attachRows);
+    }
+
     // Notification for assigned dept users
     if (departmentId) {
       const { data: deptUsers } = await supabase.from('profiles')
