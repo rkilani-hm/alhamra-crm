@@ -22,6 +22,21 @@ interface Props {
 const WaThreadPreview = ({ conversationId, contactName }: Props) => {
   const [expanded, setExpanded] = useState(false);
 
+  // Fetch the conversation + channel label so we can show where it happened
+  const { data: convInfo } = useQuery<{ label: string | null } | null>({
+    queryKey: ['wa-conv-channel', conversationId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('wa_conversations')
+        .select('wa_channels(label, phone)')
+        .eq('id', conversationId)
+        .maybeSingle();
+      const ch = data?.wa_channels;
+      if (!ch) return { label: null };
+      return { label: ch.label ?? ch.phone ?? null };
+    },
+  });
+
   const { data: messages = [], isLoading } = useQuery<WaMessage[]>({
     queryKey: ['wa-thread', conversationId],
     enabled: expanded,   // only fetch when opened
@@ -44,6 +59,9 @@ const WaThreadPreview = ({ conversationId, contactName }: Props) => {
       >
         <MessageSquare className="h-3 w-3" />
         {expanded ? 'Hide messages' : 'View messages'}
+        {convInfo?.label && (
+          <span className="text-[10px] font-normal text-muted-foreground">· via {convInfo.label}</span>
+        )}
         {expanded
           ? <ChevronUp className="h-3 w-3" />
           : <ChevronDown className="h-3 w-3" />}
