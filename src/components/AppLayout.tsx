@@ -18,12 +18,16 @@ import {
 const AH = {
   RED:    '#CD1719',
   DARK:   '#1D1D1B',
-  GRAY:   '#B2B2B2',
+  GRAY:   '#6B6B6B',
   LIGHT:  '#EDEDED',
-  DIM:    '#252522',     // hover bg
-  ACTIVE: '#2C2C29',     // active item bg
-  BORDER: '#2A2A27',     // sidebar dividers
+  DIM:    '#F0EEEB',     // hover bg  (light mode)
+  ACTIVE: '#E8E4DF',     // active item bg (light mode)
+  BORDER: '#E0DDD8',     // sidebar dividers (light mode)
   WHITE:  '#FFFFFF',
+  // Sidebar is now LIGHT — these drive sidebar fg colors
+  SB_BG:    '#FAFAF8',   // sidebar background
+  SB_TEXT:  '#1D1D1B',   // nav item text
+  SB_MUTED: '#8A8A87',   // section labels, subtitles
 } as const;
 
 /* ─── Nav config ──────────────────────────────────────────── */
@@ -157,7 +161,7 @@ export default function AppLayout() {
           padding:         collapsed ? '0 8px' : '0 12px',
           justifyContent:  collapsed ? 'center' : 'flex-start',
           background:      active ? AH.ACTIVE : 'transparent',
-          color:           active ? AH.WHITE  : AH.GRAY,
+          color:           active ? AH.WHITE  : AH.SB_TEXT,
         }}
         onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = AH.DIM; }}
         onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
@@ -176,7 +180,7 @@ export default function AppLayout() {
         {/* Icon */}
         <Icon style={{
           width: 18, height: 18, flexShrink: 0,
-          color: active ? AH.RED : AH.GRAY,
+          color: active ? AH.RED : AH.SB_MUTED,
           transition: 'color 0.12s',
         }} />
 
@@ -240,7 +244,7 @@ export default function AppLayout() {
         className="relative flex flex-col flex-shrink-0"
         style={{
           width:       collapsed ? 56 : 224,
-          background:  AH.DARK,
+          background:  AH.SB_BG,
           borderRight: `1px solid ${AH.BORDER}`,
           transition:  'width 0.22s cubic-bezier(0.4,0,0.2,1)',
           zIndex:      10,
@@ -253,11 +257,23 @@ export default function AppLayout() {
           padding:        collapsed ? '0' : '0 16px',
           justifyContent: collapsed ? 'center' : 'flex-start',
           borderBottom:   `1px solid ${AH.BORDER}`,
+          background:     AH.SB_BG,
         }}>
-          {collapsed
-            ? <AlhamraLogo size={26} variant="light" showText={false} />
-            : <AlhamraLogo size={30} variant="light" showText />
-          }
+          {collapsed ? (
+            <img src="/logo.jpg" alt="Al Hamra" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 4 }} />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <img src="/logo.jpg" alt="Al Hamra" style={{ width: 42, height: 42, objectFit: 'contain', borderRadius: 4 }} />
+              <div style={{ lineHeight: 1.2 }}>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: AH.DARK, fontFamily: "'Josefin Sans',sans-serif" }}>
+                  AL HAMRA
+                </p>
+                <p style={{ margin: 0, fontSize: 9, fontWeight: 400, letterSpacing: '0.18em', color: AH.RED, fontFamily: "'Josefin Sans',sans-serif" }}>
+                  REAL ESTATE
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Collapse / expand toggle ─────────────────────── */}
@@ -267,7 +283,7 @@ export default function AppLayout() {
           style={{
             position: 'absolute', right: -12, top: 52, zIndex: 20,
             width: 24, height: 24, borderRadius: '50%',
-            background: AH.RED, border: `2px solid ${AH.DARK}`,
+            background: AH.RED, border: `2px solid ${AH.SB_BG}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
             transition: 'transform 0.15s',
@@ -301,7 +317,7 @@ export default function AppLayout() {
                     margin: 0, padding: '12px 14px 4px',
                     fontSize: 9, fontWeight: 700,
                     letterSpacing: '0.22em', textTransform: 'uppercase',
-                    color: AH.RED, opacity: 0.8,
+                    color: AH.RED, opacity: 0.9,
                   }}>
                     {section}
                   </p>
@@ -357,7 +373,7 @@ export default function AppLayout() {
             <div style={{ padding: '8px 10px' }}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                background: '#242421', borderRadius: 6, padding: '8px 10px',
+                background: AH.ACTIVE, borderRadius: 6, padding: '8px 10px',
               }}>
                 {/* Avatar */}
                 <div style={{
