@@ -221,9 +221,6 @@ const WhatsAppInbox = () => {
           <button
             onClick={() => {
               sync.mutate();
-              // Also push contacts + users on every sync
-              setTimeout(() => pushContacts.mutate(), 1000);
-              setTimeout(() => pushUsers.mutate(), 2000);
             }}
             disabled={sync.isPending}
             title="Sync channels"

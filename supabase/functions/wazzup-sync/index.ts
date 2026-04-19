@@ -40,7 +40,12 @@ serve(async (req) => {
   }
 
 
-  const apiKey   = Deno.env.get('WAZZUP_API_KEY');
+  const apiKey = Deno.env.get('WAZZUP_API_KEY');
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: 'WAZZUP_API_KEY secret not set in Supabase Edge Function secrets' }), {
+      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
+  }
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -51,6 +56,12 @@ serve(async (req) => {
     const channelsRes = await fetch('https://api.wazzup24.com/v3/channels', {
       headers: { 'Authorization': `Bearer ${apiKey}` },
     });
+    if (!channelsRes.ok) {
+      const errText = await channelsRes.text().catch(() => '');
+      return new Response(JSON.stringify({
+        error: `Wazzup24 API returned ${channelsRes.status} — check your WAZZUP_API_KEY is valid. Details: ${errText.slice(0,200)}`
+      }), { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
     const channelsBody = await channelsRes.json().catch(() => ({}));
     const channels: any[] = Array.isArray(channelsBody)
       ? channelsBody

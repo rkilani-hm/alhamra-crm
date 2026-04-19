@@ -45,6 +45,11 @@ serve(async (req) => {
 
 
   const apiKey = Deno.env.get('WAZZUP_API_KEY');
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: 'WAZZUP_API_KEY secret not set in Supabase Edge Function secrets' }), {
+      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
+  }
   const crmBase = Deno.env.get('CRM_BASE_URL') || 'https://alhamra-crm.lovable.app';
 
   const supabase = createClient(

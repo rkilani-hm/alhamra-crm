@@ -30,7 +30,7 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
-  const auth = await verifyCallerRole(req, supabaseAdmin, ['manager']);
+  const auth = await verifyCallerRole(req, supabaseAdmin, ['manager', 'frontdesk']);
   if (!auth.ok) {
     return new Response(JSON.stringify({ error: auth.error }), {
       status: 403, headers: { ...CORS, 'Content-Type': 'application/json' },
@@ -39,6 +39,11 @@ serve(async (req) => {
 
 
   const apiKey = Deno.env.get('WAZZUP_API_KEY');
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: 'WAZZUP_API_KEY secret not set in Supabase Edge Function secrets' }), {
+      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
+  }
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
