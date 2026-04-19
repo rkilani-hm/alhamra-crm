@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { Users, Plus, Search, Phone, Mail, Building2, ChevronRight, MessageSquare, FileSpreadsheet } from 'lucide-react';
 import ImportModal from '@/components/crm/ImportModal';
 import OrgCombobox from '@/components/crm/OrgCombobox';
+import { useDuplicateCheck } from '@/hooks/useDuplicateCheck';
+import DuplicateWarning from '@/components/crm/DuplicateWarning';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -33,6 +35,13 @@ const NewContactModal = ({ open, onClose, defaultOrgId }: { open: boolean; onClo
     name: '', phone: '', email: '', job_title: '',
     organization_id: defaultOrgId ?? '', source: 'call', client_type: 'potential',
   });
+
+  const { checking: dupChecking, result: dupResult } = useDuplicateCheck({
+    entity_type: 'contact',
+    name:        form.name,
+    phone:       form.phone,
+    email:       form.email,
+  }, open && form.name.trim().length >= 2);
 
   const { data: orgs = [] } = useQuery<Organization[]>({
     queryKey: ['orgs-select'],
@@ -108,10 +117,12 @@ const NewContactModal = ({ open, onClose, defaultOrgId }: { open: boolean; onClo
             </div>
           </div>
         </div>
+        <DuplicateWarning checking={dupChecking} result={dupResult} entityType="contact" />
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button size="sm" onClick={() => create.mutate()} disabled={create.isPending || !form.name.trim()}>
-            {create.isPending ? 'Creating…' : 'Create contact'}
+          <Button size="sm" onClick={() => create.mutate()}
+            disabled={create.isPending || !form.name.trim() || (dupResult?.is_duplicate === true && dupResult.confidence >= 85)}>
+            {create.isPending ? 'Creating…' : dupResult?.is_duplicate && dupResult.confidence >= 85 ? 'Duplicate detected' : 'Create contact'}
           </Button>
         </div>
       </DialogContent>

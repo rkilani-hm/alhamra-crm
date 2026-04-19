@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useDuplicateCheck } from '@/hooks/useDuplicateCheck';
+import DuplicateWarning from '@/components/crm/DuplicateWarning';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Building2, Plus, Search, Users, Briefcase, Phone, Globe, ChevronRight, FileSpreadsheet } from 'lucide-react';
@@ -31,6 +33,13 @@ const NewOrgModal = ({ open, onClose }: { open: boolean; onClose: () => void }) 
     name: '', type: 'tenant' as OrgType, industry: '', phone: '',
     email: '', website: '', address: '', sap_bp_number: '', description: '',
   });
+
+  const { checking: dupChecking, result: dupResult } = useDuplicateCheck({
+    entity_type: 'organization',
+    name:        form.name,
+    phone:       form.phone,
+    email:       form.email,
+  }, open && form.name.trim().length >= 2);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -110,10 +119,12 @@ const NewOrgModal = ({ open, onClose }: { open: boolean; onClose: () => void }) 
             </div>
           </div>
         </div>
+        <DuplicateWarning checking={dupChecking} result={dupResult} entityType="organization" />
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button size="sm" onClick={() => create.mutate()} disabled={create.isPending || !form.name.trim()}>
-            {create.isPending ? 'Creating…' : 'Create organization'}
+          <Button size="sm" onClick={() => create.mutate()}
+            disabled={create.isPending || !form.name.trim() || (dupResult?.is_duplicate === true && dupResult.confidence >= 85)}>
+            {create.isPending ? 'Creating…' : dupResult?.is_duplicate && dupResult.confidence >= 85 ? 'Duplicate detected' : 'Create organization'}
           </Button>
         </div>
       </DialogContent>

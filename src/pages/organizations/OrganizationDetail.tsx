@@ -156,7 +156,9 @@ const OrganizationDetail = () => {
         .from('contacts')
         .select('id,name,phone,email,job_title,organization_id')
         .or(`name.ilike.${like},phone.ilike.${like},email.ilike.${like}`)
-        .neq('organization_id', id)          // exclude already-linked contacts
+        // Include unassigned contacts (null org) AND contacts from other orgs
+        // .neq() in SQL excludes NULLs, so we must use .or() explicitly
+        .or(`organization_id.is.null,organization_id.neq.${id}`)
         .limit(8);
       return data ?? [];
     },
