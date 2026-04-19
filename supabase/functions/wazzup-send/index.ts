@@ -13,16 +13,35 @@ function getCorsHeaders(_origin: string | null) {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 }
-// ── Verify caller is authenticated + has required role ───────
-async function verifyCallerRole(req: Request, supabase: any, allowedRoles: string[]): Promise<{ ok: boolean; error?: string }> {
+// ── Verify caller via JWT claims (works with ES256 signing keys) ───
+async function verifyCallerRole(
+  req: Request,
+  allowedRoles: string[],
+): Promise<{ ok: boolean; error?: string; userId?: string }> {
   const authHeader = req.headers.get('Authorization') ?? '';
   if (!authHeader.startsWith('Bearer ')) return { ok: false, error: 'Missing authorization' };
+
+  // Build a user-scoped client (validates RLS + ES256 JWT correctly)
+  const userClient = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+
   const token = authHeader.slice(7);
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return { ok: false, error: 'Invalid token' };
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+  if (claimsErr || !claimsData?.claims?.sub) return { ok: false, error: 'Invalid token' };
+
+  const userId = claimsData.claims.sub as string;
+
+  // Use service-role client to read the role (bypasses RLS recursion concerns)
+  const admin = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+  const { data: profile } = await admin.from('profiles').select('role').eq('id', userId).maybeSingle();
   if (!profile || !allowedRoles.includes(profile.role)) return { ok: false, error: 'Insufficient permissions' };
-  return { ok: true };
+  return { ok: true, userId };
 }
 
 
@@ -52,23 +71,18 @@ function checkRateLimit(userId: string): { allowed: boolean; retryAfter?: number
 serve(async (req) => {
   const CORS = getCorsHeaders(req.headers.get('origin'));
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-  // C6: Verify caller role
-  const supabaseAdmin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
-  const auth = await verifyCallerRole(req, supabaseAdmin, ['frontdesk', 'manager']);
+
+  const auth = await verifyCallerRole(req, ['frontdesk', 'manager']);
   if (!auth.ok) {
     return new Response(JSON.stringify({ error: auth.error }), {
-      status: 403, headers: { ...CORS, 'Content-Type': 'application/json' },
+      status: auth.error === 'Insufficient permissions' ? 403 : 401,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   }
 
-  // M3: Rate limit check
-  const callerToken2 = (req.headers.get('Authorization') ?? '').slice(7);
-  const { data: { user: callerUser } } = await supabaseAdmin.auth.getUser(callerToken2);
-  if (callerUser) {
-    const rl = checkRateLimit(callerUser.id);
+  // Rate limit check
+  if (auth.userId) {
+    const rl = checkRateLimit(auth.userId);
     if (!rl.allowed) {
       return new Response(JSON.stringify({ error: `Rate limit exceeded. Try again in ${rl.retryAfter}s` }), {
         status: 429,
