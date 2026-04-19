@@ -5,28 +5,28 @@ project_id = "hvhggfieaykcrlqxumeh"
 [functions.wazzup-webhook]
 verify_jwt = false
 
-# All other functions require a valid authenticated JWT.
-# Role verification happens inside each function (C6).
+# JWT validation happens in-code via supabase.auth.getUser(token) inside each function.
+# Gateway-level verify_jwt must be false to support the new ES256 signing keys.
 [functions.wazzup-sync]
-verify_jwt = true
+verify_jwt = false
 
 [functions.wazzup-push-contacts]
-verify_jwt = true
+verify_jwt = false
 
 [functions.wazzup-push-users]
-verify_jwt = true
+verify_jwt = false
 
 [functions.wazzup-send]
 verify_jwt = false
 
 [functions.wazzup-iframe]
-verify_jwt = true
+verify_jwt = false
 
 [functions.wazzup-contacts-sync]
-verify_jwt = true
+verify_jwt = false
 
 [functions.admin-create-user]
-verify_jwt = true
+verify_jwt = false
 
 [functions.intake-form]
 verify_jwt = false
