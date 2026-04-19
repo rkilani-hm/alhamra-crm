@@ -260,10 +260,10 @@ export default function AppLayout() {
           background:     AH.SB_BG,
         }}>
           {collapsed ? (
-            <img src="/logo.jpg" alt="Al Hamra" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 4 }} />
+            <img src="/logo.jpg" alt="Al Hamra" style={{ width: 36, height: 36, objectFit: 'contain', mixBlendMode: 'multiply' }} />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <img src="/logo.jpg" alt="Al Hamra" style={{ width: 42, height: 42, objectFit: 'contain', borderRadius: 4 }} />
+              <img src="/logo.jpg" alt="Al Hamra" style={{ width: 42, height: 42, objectFit: 'contain', mixBlendMode: 'multiply' }} />
               <div style={{ lineHeight: 1.2 }}>
                 <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: AH.DARK, fontFamily: "'Josefin Sans',sans-serif" }}>
                   AL HAMRA
