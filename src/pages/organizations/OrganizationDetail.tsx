@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ActivityIcon, ACTIVITY_CONFIG } from '@/components/crm/ActivityIcon';
 import LogActivityModal from '@/components/crm/LogActivityModal';
-import WazzupChatPanel from '@/components/crm/WazzupChatPanel';
+import WaContactThread from '@/components/crm/WaContactThread';
 import ImageUploader from '@/components/crm/ImageUploader';
 import WaThreadPreview from '@/components/crm/WaThreadPreview';
 import {
@@ -627,23 +627,27 @@ const OrganizationDetail = () => {
 
           {tab === 'whatsapp' && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">{contacts.length} contacts — click a contact to open their WhatsApp chat</p>
+              <p className="text-sm text-muted-foreground">
+                {contacts.length} contacts — WhatsApp history shown below
+              </p>
               {contacts.length === 0 && (
                 <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
                   No contacts linked to this organization yet
                 </div>
               )}
-              {contacts.map(c => {
-                if (!c.phone) return null;
-                return (
-                  <WazzupChatPanel
-                    key={c.id}
-                    chatId={c.phone.replace(/\D/g, '')}
+              {contacts.map(c => (
+                <div key={c.id} className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    {c.name}
+                  </p>
+                  <WaContactThread
+                    contactId={c.id}
+                    phone={c.phone}
                     contactName={c.name}
-                    height={400}
+                    height={420}
                   />
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>

@@ -13,7 +13,7 @@ import { ActivityIcon } from '@/components/crm/ActivityIcon';
 import LogActivityModal from '@/components/crm/LogActivityModal';
 import ImageUploader from '@/components/crm/ImageUploader';
 import WaThreadPreview from '@/components/crm/WaThreadPreview';
-import WazzupChatPanel from '@/components/crm/WazzupChatPanel';
+import WaContactThread from '@/components/crm/WaContactThread';
 import { Phone, Mail, Building2, ChevronLeft, Plus, Edit2, Save, X, Briefcase, LayoutList, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -324,19 +324,12 @@ const ContactDetail = () => {
           )}
 
           {tab === 'whatsapp' && (
-            <div className="space-y-4">
-              {contact.phone ? (
-                <WazzupChatPanel
-                  chatId={contact.phone.replace(/\D/g, '')}
-                  contactName={contact.name}
-                  height={520}
-                />
-              ) : (
-                <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-                  No phone number on this contact — add one to view WhatsApp history
-                </div>
-              )}
-            </div>
+            <WaContactThread
+              contactId={contact.id}
+              phone={contact.phone}
+              contactName={contact.name}
+              height={560}
+            />
           )}
         </div>
       </div>
