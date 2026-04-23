@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { WaChannel, WaConversation } from '@/types';
 import { toast } from 'sonner';
-import { MessageSquare, RefreshCw, Clock, ChevronRight, Upload, Users, SquarePen } from 'lucide-react';
+import { MessageSquare, RefreshCw, Clock, ChevronRight, Upload, Users, SquarePen, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -186,6 +186,35 @@ const WhatsAppInbox = () => {
 
   const totalUnread = conversations.reduce((s, c) => s + (c.unread_count ?? 0), 0);
 
+  // ── Local WhatsApp (Railway/Evolution) health check ────────
+  const health = useQuery({
+    queryKey: ['local-wa-api-health'],
+    refetchInterval: 60_000,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('local-wa-api', {
+        body: { action: 'list' },
+      });
+      if (error) throw error;
+      // Function returned but Railway upstream might still be down
+      const upstreamOk = data?.ok !== false && !data?.error;
+      return {
+        ok: upstreamOk,
+        count: Array.isArray(data?.instances) ? data.instances.length : 0,
+        message: upstreamOk ? 'Connected' : (data?.instances?.response?.message || data?.error || 'Upstream error'),
+      };
+    },
+  });
+
+  const healthState: { color: string; label: string; Icon: typeof CheckCircle2; tip: string } =
+    health.isLoading
+      ? { color: '#9ca3af', label: 'Checking…', Icon: Loader2, tip: 'Pinging local-wa-api…' }
+      : health.isError
+        ? { color: '#CD1719', label: 'Offline', Icon: AlertCircle, tip: (health.error as any)?.message ?? 'Edge function unreachable' }
+        : health.data?.ok
+          ? { color: '#16a34a', label: `Online · ${health.data.count}`, Icon: CheckCircle2, tip: `${health.data.count} Evolution instance(s)` }
+          : { color: '#f59e0b', label: 'Upstream', Icon: AlertCircle, tip: health.data?.message ?? 'Railway unreachable' };
+
   return (
     <div
       className="flex overflow-hidden rounded-xl border"
@@ -217,6 +246,29 @@ const WhatsAppInbox = () => {
                 {totalUnread}
               </span>
             )}
+            {/* Local WhatsApp health pill */}
+            <button
+              type="button"
+              onClick={() => health.refetch()}
+              title={healthState.tip}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: `${healthState.color}15`,
+                border: `1px solid ${healthState.color}40`,
+                color: healthState.color,
+                fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+                borderRadius: 10, padding: '2px 7px',
+                cursor: 'pointer',
+              }}
+            >
+              <healthState.Icon
+                style={{
+                  width: 10, height: 10,
+                  animation: health.isLoading || health.isFetching ? 'spin 1s linear infinite' : 'none',
+                }}
+              />
+              {healthState.label}
+            </button>
           </div>
           <button
             onClick={() => {
