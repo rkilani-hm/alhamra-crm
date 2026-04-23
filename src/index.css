@@ -83,14 +83,14 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Josefin Sans', 'Century Gothic', 'Gill Sans MT', 'Gill Sans', sans-serif;
+    font-family: 'Century Gothic', CenturyGothic, 'Apple Gothic', 'URW Gothic', 'Avant Garde', 'Gill Sans MT', 'Gill Sans', 'Josefin Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   /* Century Gothic Bold style for all headings */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Josefin Sans', 'Century Gothic', sans-serif;
+    font-family: 'Century Gothic', CenturyGothic, 'Apple Gothic', 'URW Gothic', 'Avant Garde', 'Gill Sans MT', 'Josefin Sans', sans-serif;
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
