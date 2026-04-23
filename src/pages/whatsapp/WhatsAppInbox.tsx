@@ -246,6 +246,29 @@ const WhatsAppInbox = () => {
                 {totalUnread}
               </span>
             )}
+            {/* Local WhatsApp health pill */}
+            <button
+              type="button"
+              onClick={() => health.refetch()}
+              title={healthState.tip}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: `${healthState.color}15`,
+                border: `1px solid ${healthState.color}40`,
+                color: healthState.color,
+                fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+                borderRadius: 10, padding: '2px 7px',
+                cursor: 'pointer',
+              }}
+            >
+              <healthState.Icon
+                style={{
+                  width: 10, height: 10,
+                  animation: health.isLoading || health.isFetching ? 'spin 1s linear infinite' : 'none',
+                }}
+              />
+              {healthState.label}
+            </button>
           </div>
           <button
             onClick={() => {
