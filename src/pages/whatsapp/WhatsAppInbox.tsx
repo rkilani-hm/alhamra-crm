@@ -196,13 +196,12 @@ const WhatsAppInbox = () => {
         body: { action: 'list' },
       });
       if (error) throw error;
-      // Function returned but Railway upstream might still be down
-      const upstreamOk = data?.ok !== false && !data?.error;
-      return {
-        ok: upstreamOk,
-        count: Array.isArray(data?.instances) ? data.instances.length : 0,
-        message: upstreamOk ? 'Connected' : (data?.instances?.response?.message || data?.error || 'Upstream error'),
-      };
+      const upstreamOk = data?.ok === true;
+      const count = Array.isArray(data?.instances) ? data.instances.length : 0;
+      const message = upstreamOk
+        ? `${count} instance(s)`
+        : (data?.error?.message ?? data?.error ?? 'Upstream error');
+      return { ok: upstreamOk, count, message, requestId: data?.requestId };
     },
   });
 
