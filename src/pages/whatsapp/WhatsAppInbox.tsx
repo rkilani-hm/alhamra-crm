@@ -186,6 +186,35 @@ const WhatsAppInbox = () => {
 
   const totalUnread = conversations.reduce((s, c) => s + (c.unread_count ?? 0), 0);
 
+  // ── Local WhatsApp (Railway/Evolution) health check ────────
+  const health = useQuery({
+    queryKey: ['local-wa-api-health'],
+    refetchInterval: 60_000,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('local-wa-api', {
+        body: { action: 'list' },
+      });
+      if (error) throw error;
+      // Function returned but Railway upstream might still be down
+      const upstreamOk = data?.ok !== false && !data?.error;
+      return {
+        ok: upstreamOk,
+        count: Array.isArray(data?.instances) ? data.instances.length : 0,
+        message: upstreamOk ? 'Connected' : (data?.instances?.response?.message || data?.error || 'Upstream error'),
+      };
+    },
+  });
+
+  const healthState: { color: string; label: string; Icon: typeof CheckCircle2; tip: string } =
+    health.isLoading
+      ? { color: '#9ca3af', label: 'Checking…', Icon: Loader2, tip: 'Pinging local-wa-api…' }
+      : health.isError
+        ? { color: '#CD1719', label: 'Offline', Icon: AlertCircle, tip: (health.error as any)?.message ?? 'Edge function unreachable' }
+        : health.data?.ok
+          ? { color: '#16a34a', label: `Online · ${health.data.count}`, Icon: CheckCircle2, tip: `${health.data.count} Evolution instance(s)` }
+          : { color: '#f59e0b', label: 'Upstream', Icon: AlertCircle, tip: health.data?.message ?? 'Railway unreachable' };
+
   return (
     <div
       className="flex overflow-hidden rounded-xl border"
