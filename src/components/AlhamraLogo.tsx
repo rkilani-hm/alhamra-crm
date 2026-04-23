@@ -20,7 +20,7 @@ const AlhamraLogo = ({ size = 40, variant = 'light', showText = true, className 
   return (
     <div
       className={`flex items-center gap-2.5 select-none ${className}`}
-      style={{ fontFamily: "'Josefin Sans','Century Gothic','Gill Sans MT',sans-serif" }}
+      style={{ fontFamily: "'Century Gothic',CenturyGothic,'Apple Gothic','URW Gothic','Avant Garde','Gill Sans MT','Josefin Sans',sans-serif" }}
     >
       {/* Tower mark */}
       <svg width={Math.round(size * 0.5)} height={size} viewBox="0 0 24 48" fill="none">

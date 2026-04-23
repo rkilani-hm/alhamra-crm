@@ -16,8 +16,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        // Century Gothic → Josefin Sans (geometric sans-serif, closest match)
-        sans: ["'Josefin Sans'", "'Century Gothic'", "'Gill Sans MT'", "sans-serif"],
+        // Century Gothic everywhere, with safe geometric sans-serif fallbacks
+        sans: ["'Century Gothic'", "CenturyGothic", "'Apple Gothic'", "'URW Gothic'", "'Avant Garde'", "'Gill Sans MT'", "'Gill Sans'", "'Josefin Sans'", "sans-serif"],
       },
       colors: {
         // Official Al Hamra brand palette
