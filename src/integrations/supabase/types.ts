@@ -495,6 +495,66 @@ export type Database = {
         }
         Relationships: []
       }
+      local_wa_instances: {
+        Row: {
+          channel_id: string | null
+          connected_at: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          instance_name: string
+          label: string
+          phone: string | null
+          qr_code: string | null
+          qr_updated_at: string | null
+          state: string
+          updated_at: string | null
+        }
+        Insert: {
+          channel_id?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          instance_name: string
+          label: string
+          phone?: string | null
+          qr_code?: string | null
+          qr_updated_at?: string | null
+          state?: string
+          updated_at?: string | null
+        }
+        Update: {
+          channel_id?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          instance_name?: string
+          label?: string
+          phone?: string | null
+          qr_code?: string | null
+          qr_updated_at?: string | null
+          state?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "local_wa_instances_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "wa_channels"
+            referencedColumns: ["channel_id"]
+          },
+          {
+            foreignKeyName: "local_wa_instances_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -790,6 +850,7 @@ export type Database = {
           id: string
           label: string | null
           phone: string
+          source: string
           state: string | null
           transport: string | null
         }
@@ -799,6 +860,7 @@ export type Database = {
           id?: string
           label?: string | null
           phone: string
+          source?: string
           state?: string | null
           transport?: string | null
         }
@@ -808,6 +870,7 @@ export type Database = {
           id?: string
           label?: string | null
           phone?: string
+          source?: string
           state?: string | null
           transport?: string | null
         }
