@@ -21,18 +21,17 @@ async function verifyCallerRole(
   const authHeader = req.headers.get('Authorization') ?? '';
   if (!authHeader.startsWith('Bearer ')) return { ok: false, error: 'Missing authorization' };
 
-  // Build a user-scoped client (validates RLS + ES256 JWT correctly)
-  const userClient = createClient(
+  const token = authHeader.slice(7);
+  const adminClient = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    { auth: { persistSession: false } },
   );
 
-  const token = authHeader.slice(7);
-  const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
-  if (claimsErr || !claimsData?.claims?.sub) return { ok: false, error: 'Invalid token' };
+  const { data: { user }, error: userErr } = await adminClient.auth.getUser(token);
+  if (userErr || !user) return { ok: false, error: 'Invalid token' };
 
-  const userId = claimsData.claims.sub as string;
+  const userId = user.id;
 
   // Use service-role client to read the role (bypasses RLS recursion concerns)
   const admin = createClient(
