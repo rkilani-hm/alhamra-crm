@@ -457,7 +457,7 @@ const LocalInbox = ({ instances }: { instances: WaInstance[] }) => {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, truncate: true, color: '#1D1D1B' }}>{name}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#1D1D1B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</p>
                     {c.last_message_at && (
                       <p style={{ fontSize: 10, color: '#aaa', flexShrink: 0, marginLeft: 4 }}>
                         {formatDistanceToNow(new Date(c.last_message_at), { addSuffix: false })}
