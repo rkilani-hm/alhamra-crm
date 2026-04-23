@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { WaChannel, WaConversation } from '@/types';
 import { toast } from 'sonner';
-import { MessageSquare, RefreshCw, Clock, ChevronRight, Upload, Users, SquarePen } from 'lucide-react';
+import { MessageSquare, RefreshCw, Clock, ChevronRight, Upload, Users, SquarePen, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
