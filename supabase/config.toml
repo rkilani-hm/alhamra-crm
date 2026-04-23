@@ -33,3 +33,9 @@ verify_jwt = false
 
 [functions.sap-ingest]
 verify_jwt = false
+
+[functions.local-wa-webhook]
+verify_jwt = false
+
+[functions.local-wa-api]
+verify_jwt = false
