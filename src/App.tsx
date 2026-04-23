@@ -11,7 +11,8 @@ import Login              from '@/pages/Login';
 import CaseNew            from '@/pages/CaseNew';
 import Tasks              from '@/pages/Tasks';
 import FollowUp           from '@/pages/FollowUp';
-import WhatsAppInbox      from '@/pages/whatsapp/WhatsAppInbox';
+import WhatsAppInbox          from '@/pages/whatsapp/WhatsAppInbox';
+import LocalWhatsAppChannels  from '@/pages/localwhatsapp/LocalWhatsAppChannels';
 import Reports            from '@/pages/reports/Reports';
 import AdminOverview      from '@/pages/admin/AdminOverview';
 import AdminUsers         from '@/pages/admin/AdminUsers';
@@ -64,7 +65,8 @@ const App = () => (
               <Route path="/activities"      element={<ActivitiesPage />} />
 
               {/* Channels */}
-              <Route path="/whatsapp"   element={<ProtectedRoute allowedRoles={['frontdesk','manager']}><WhatsAppInbox /></ProtectedRoute>} />
+              <Route path="/whatsapp"        element={<ProtectedRoute allowedRoles={['frontdesk','manager']}><WhatsAppInbox /></ProtectedRoute>} />
+              <Route path="/local-whatsapp" element={<ProtectedRoute allowedRoles={['frontdesk','manager']}><LocalWhatsAppChannels /></ProtectedRoute>} />
 
               {/* Insights */}
               <Route path="/reports"    element={<ProtectedRoute allowedRoles={['manager']}><Reports /></ProtectedRoute>} />

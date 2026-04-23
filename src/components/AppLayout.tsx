@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import {
   PhoneIncoming, ClipboardList, CheckSquare, LogOut, Layers,
   LayoutDashboard, Users, Building2, Tag, Shield, Target, Globe, Database,
-  ChevronLeft, ChevronRight, MessageSquare, BarChart2, Calendar, Timer,
+  ChevronLeft, ChevronRight, MessageSquare, BarChart2, Calendar, Timer, Smartphone,
 } from 'lucide-react';
 
 /* ─── Official Al Hamra brand tokens ──────────────────────── */
@@ -66,7 +66,8 @@ const SECTIONS: { section: string; roles: NavRole[]; items: NavItem[] }[] = [
     section: 'Channels',
     roles:   ['frontdesk', 'manager'],
     items:   [
-      { to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, roles: ['frontdesk','manager'], badge: 'wa' },
+      { to: '/whatsapp',       label: 'WhatsApp',              icon: MessageSquare, roles: ['frontdesk','manager'], badge: 'wa' },
+      { to: '/local-whatsapp', label: 'Local WA Channels',   icon: Smartphone,    roles: ['frontdesk','manager'] },
     ],
   },
   {
