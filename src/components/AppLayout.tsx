@@ -434,7 +434,7 @@ export default function AppLayout() {
       {/* ═══════════════ MAIN CONTENT ═══════════════════════ */}
       <main className="flex-1 overflow-y-auto scrollbar-thin bg-background flex flex-col">
         {/* Top bar: search + notifications */}
-        <div className="sticky top-0 z-20 flex items-center justify-end gap-2 px-6 py-2.5 border-b bg-background/80 backdrop-blur-sm">
+        <div className="sticky top-0 z-10 flex items-center justify-end gap-2 pl-10 pr-6 py-2.5 border-b bg-background/80 backdrop-blur-sm">
           <GlobalSearch />
           <NotificationBell />
         </div>
