@@ -282,7 +282,7 @@ export default function AppLayout() {
           onClick={() => setCollapsed(c => !c)}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           style={{
-            position: 'absolute', right: -12, top: 52, zIndex: 20,
+            position: 'absolute', right: -12, top: 12, zIndex: 20,
             width: 24, height: 24, borderRadius: '50%',
             background: AH.RED, border: `2px solid ${AH.SB_BG}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
